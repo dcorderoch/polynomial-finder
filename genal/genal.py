@@ -194,8 +194,9 @@ generation = PriorityQueue()
 
 def main():
     gen0 = generate_generation(size=MAX_POPULATION_SIZE)
-    for i in generation:
+    for i in gen0:
         generation.put((calc_fitness(p=i, data=f1_data), 0, i))
+    cycles = 0
     while True:
         i = 0
         tmp_gen = ()
@@ -253,7 +254,7 @@ def mutate(*, ind1, ind2):
 
 
 def make_new_polinomials(gen):
-    for _ in range(MAX_POPULATION_SIZE / 2):
+    for _ in range(MAX_POPULATION_SIZE):
         select1 = random.randint(0, MAX_POPULATION_SIZE - 1)
 
         select2 = select1
