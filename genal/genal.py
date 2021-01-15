@@ -15,6 +15,7 @@ Polinomial = namedtuple(
 MAX_POPULATION_SIZE = 20
 INITIAL_POPULATION_SIZE = 10
 MUTATION_THRESHOLD = 1e4
+ERROR_THRESHOLD = 1e-6
 
 # data = ((0, 0), (1, 1))
 
@@ -190,32 +191,50 @@ f3_data = (
 
 generation = PriorityQueue()
 
-tmp_gen = ()
-
 
 def main():
-    gen0 = generate_generation(size=INITIAL_POPULATION_SIZE)
+    gen0 = generate_generation(size=MAX_POPULATION_SIZE)
     for i in generation:
-        generation.put((calc_fitness(p=i, data=f1_data), i))
-    while not generation.empty():
-        tmp_gen = (*tmp_gen, generation.get())
-    make_new_polinomials(tmp_gen)
+        generation.put((calc_fitness(p=i, data=f1_data), 0, i))
+    while True:
+        i = 0
+        tmp_gen = ()
+        while not generation.empty():
+            if i < MAX_POPULATION_SIZE:
+                tmp_gen = (*tmp_gen, generation.get())
+            else:
+                generation.get()
+            i += 1
+        # check if individual has max fitness
+        if tmp_gen[0][0] <= ERROR_THRESHOLD:
+            # show result in GUI
+            return
+        make_new_polinomials(tmp_gen)
+        for f, _, p in tmp_gen:
+            generation.pu((f, 0, p))
+        # here the ranking has already been done
+
+        # check if timer has reached 5 minutes
+        if cycles >= 1000:
+            return
+
+        cycles += 1
 
 
 def mix(*, ind1, ind2):
     chance_to_mutate = random.uniform(0, MUTATION_THRESHOLD)
-    will_mutate = chance_to_mutate != MUTATION_THRESHOLD
+    will_mutate = chance_to_mutate == MUTATION_THRESHOLD
     if will_mutate:
         return mutate(ind1=ind1, ind2=ind2)
     else:
         return Polinomial(
-            (ind1[6] if bool(random.getrandombits(1)) else ind2[6]),  # x ^ 6
-            (ind1[5] if bool(random.getrandombits(1)) else ind2[5]),  # x ^ 5
-            (ind1[4] if bool(random.getrandombits(1)) else ind2[4]),  # x ^ 4
-            (ind1[3] if bool(random.getrandombits(1)) else ind2[3]),  # x ^ 3
-            (ind1[2] if bool(random.getrandombits(1)) else ind2[2]),  # x ^ 2
-            (ind1[1] if bool(random.getrandombits(1)) else ind2[1]),  # x ^ 1
-            (ind1[0] if bool(random.getrandombits(1)) else ind2[0]),  # constant
+            (ind1[6] if bool(random.getrandbits(1)) else ind2[6]),  # x ^ 6
+            (ind1[5] if bool(random.getrandbits(1)) else ind2[5]),  # x ^ 5
+            (ind1[4] if bool(random.getrandbits(1)) else ind2[4]),  # x ^ 4
+            (ind1[3] if bool(random.getrandbits(1)) else ind2[3]),  # x ^ 3
+            (ind1[2] if bool(random.getrandbits(1)) else ind2[2]),  # x ^ 2
+            (ind1[1] if bool(random.getrandbits(1)) else ind2[1]),  # x ^ 1
+            (ind1[0] if bool(random.getrandbits(1)) else ind2[0]),  # constant
         )
     return p
 
@@ -234,20 +253,19 @@ def mutate(*, ind1, ind2):
 
 
 def make_new_polinomials(gen):
-    i = 0
-    for _ in range(INDIVIDUALS_IN_POP):
-        select1 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
+    for _ in range(MAX_POPULATION_SIZE / 2):
+        select1 = random.randint(0, MAX_POPULATION_SIZE - 1)
 
         select2 = select1
         while select2 == select1:
-            select2 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
+            select2 = random.randint(0, MAX_POPULATION_SIZE - 1)
 
-        _, i1 = gen[select1]
-        _, i2 = gen[select2]
+        _, _, i1 = gen[select1]
+        _, _, i2 = gen[select2]
 
         p = mix(ind1=i1, ind2=i2)
 
-        generation.put((calc_fitness(p=p, data=f1_data), p))
+        generation.put((calc_fitness(p=p, data=f1_data), 0, p))
 
 
 def calc_fitness(*, p, data):
@@ -291,4 +309,4 @@ def run():
 
 if __name__ == '__main__':
     print(f'running genal directly')
-    run()
+    main()
