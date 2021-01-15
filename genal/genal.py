@@ -212,7 +212,7 @@ def main():
             return
         make_new_polinomials(tmp_gen)
         for f, _, p in tmp_gen:
-            generation.pu((f, 0, p))
+            generation.put((f, 0, p))
         # here the ranking has already been done
 
         # check if timer has reached 5 minutes
