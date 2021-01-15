@@ -236,14 +236,14 @@ def mutate(*, ind1, ind2):
 def make_new_polinomials(gen):
     i = 0
     for _ in range(INDIVIDUALS_IN_POP):
-        select1 = random.randint(0, MAX_POPULATION_SIZE - 1)
+        select1 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
 
         select2 = select1
         while select2 == select1:
-            select2 = random.randint(0, MAX_POPULATION_SIZE - 1)
+            select2 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
 
-        fitness, i1 = gen[select1]
-        fitness, i2 = gen[select2]
+        _, i1 = gen[select1]
+        _, i2 = gen[select2]
 
         p = mix(ind1=i1, ind2=i2)
 
