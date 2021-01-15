@@ -12,7 +12,9 @@ Polinomial = namedtuple(
 # Adding values
 #S = Polinomial(0, 0, 0, 0, 0, 0, 0)
 
-INDIVIDUALS_IN_POP = 20
+MAX_POPULATION_SIZE = 20
+INITIAL_POPULATION_SIZE = 10
+MUTATION_THRESHOLD = 1e4
 
 # data = ((0, 0), (1, 1))
 
@@ -192,7 +194,7 @@ tmp_gen = ()
 
 
 def main():
-    gen0 = generate_generation()
+    gen0 = generate_generation(size=INITIAL_POPULATION_SIZE)
     for i in generation:
         generation.put((calc_fitness(p=i, data=f1_data), i))
     while not generation.empty():
@@ -200,22 +202,52 @@ def main():
     make_new_polinomials(tmp_gen)
 
 
+def mix(*, ind1, ind2):
+    chance_to_mutate = random.uniform(0, MUTATION_THRESHOLD)
+    will_mutate = chance_to_mutate != MUTATION_THRESHOLD
+    if will_mutate:
+        return mutate(ind1=ind1, ind2=ind2)
+    else:
+        return Polinomial(
+            (ind1[6] if bool(random.getrandombits(1)) else ind2[6]),  # x ^ 6
+            (ind1[5] if bool(random.getrandombits(1)) else ind2[5]),  # x ^ 5
+            (ind1[4] if bool(random.getrandombits(1)) else ind2[4]),  # x ^ 4
+            (ind1[3] if bool(random.getrandombits(1)) else ind2[3]),  # x ^ 3
+            (ind1[2] if bool(random.getrandombits(1)) else ind2[2]),  # x ^ 2
+            (ind1[1] if bool(random.getrandombits(1)) else ind2[1]),  # x ^ 1
+            (ind1[0] if bool(random.getrandombits(1)) else ind2[0]),  # constant
+        )
+    return p
+
+
+def mutate(*, ind1, ind2):
+    p = Polinomial(
+        random.uniform(-10.0, 10.0),  # x ^ 6
+        random.uniform(-10.0, 10.0),  # x ^ 5
+        random.uniform(-10.0, 10.0),  # x ^ 4
+        random.uniform(-10.0, 10.0),  # x ^ 3
+        random.uniform(-10.0, 10.0),  # x ^ 2
+        random.uniform(-10.0, 10.0),  # x ^ 1
+        random.uniform(-10.0, 10.0)  # constant
+    )
+    return p
+
+
 def make_new_polinomials(gen):
     i = 0
-    while i < (INDIVIDUALS_IN_POP / 2):
-        fitness, ind1 = gen[i]
-        fitness, ind2 = gen[i + 1]
-        p = Polinomial(
-            random.uniform(-10.0, 10.0),  # x ^ 6
-            random.uniform(-10.0, 10.0),  # x ^ 5
-            random.uniform(-10.0, 10.0),  # x ^ 4
-            random.uniform(-10.0, 10.0),  # x ^ 3
-            random.uniform(-10.0, 10.0),  # x ^ 2
-            random.uniform(-10.0, 10.0),  # x ^ 1
-            random.uniform(-10.0, 10.0)  # constant
-        )
+    for _ in range(INDIVIDUALS_IN_POP):
+        select1 = random.randint(0, MAX_POPULATION_SIZE - 1)
+
+        select2 = select1
+        while select2 == select1:
+            select2 = random.randint(0, MAX_POPULATION_SIZE - 1)
+
+        fitness, i1 = gen[select1]
+        fitness, i2 = gen[select2]
+
+        p = mix(ind1=i1, ind2=i2)
+
         generation.put((calc_fitness(p=p, data=f1_data), p))
-        i += 2
 
 
 def calc_fitness(*, p, data):
@@ -236,9 +268,9 @@ def calc_fitness(*, p, data):
     return fitness
 
 
-def generate_generation():
+def generate_generation(*, size):
     gen = ()
-    for i in range(INDIVIDUALS_IN_POP):
+    for i in range(size):
         gen = (*gen,
                Polinomial(
                    random.uniform(-10.0, 10.0),  # x ^ 6
