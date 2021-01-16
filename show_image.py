@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 from PyQt5.QtGui import QIcon, QPixmap
 
+
 class App(QWidget):
     def __init__(self):
         super().__init__()
@@ -21,6 +22,7 @@ class App(QWidget):
         label.setPixmap(pixmap)
         self.resize(pixmap.width(), pixmap.height())
         self.show()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

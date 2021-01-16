@@ -7,6 +7,7 @@ x_end = 2 * math.pi
 
 slices = 1000
 
+
 def main():
     x = linspace(x_start, x_end, slices)
 
@@ -23,6 +24,7 @@ def main():
     plt.plot((*x,), e, 'yellow')
 
     plt.savefig('plot.png')
+
 
 if __name__ == '__main__':
     main()
