@@ -332,12 +332,3 @@ def generate_generation(*, size):
                )
                )
     return gen
-
-
-def run():
-    print(f'genal running!')
-
-
-if __name__ == '__main__':
-    print(f'running genal directly')
-    main()
