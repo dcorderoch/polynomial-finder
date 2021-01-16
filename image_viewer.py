@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
@@ -8,8 +9,10 @@ class Ui_Dialog(object):
         self.graphicsView.setGeometry(QtCore.QRect(25, 71, 721, 491))
         self.graphicsView.setSizeIncrement(QtCore.QSize(0, 0))
         self.graphicsView.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.graphicsView.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContentsOnFirstShow)
-        self.graphicsView.setAlignment(QtCore.Qt.AlignJustify | QtCore.Qt.AlignVCenter)
+        self.graphicsView.setSizeAdjustPolicy(
+            QtWidgets.QAbstractScrollArea.AdjustToContentsOnFirstShow)
+        self.graphicsView.setAlignment(
+            QtCore.Qt.AlignJustify | QtCore.Qt.AlignVCenter)
         self.graphicsView.setObjectName("graphicsView")
         self.pushButton = QtWidgets.QPushButton(Dialog)
         self.pushButton.setGeometry(QtCore.QRect(670, 40, 75, 23))
