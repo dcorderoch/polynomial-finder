@@ -58,22 +58,41 @@ class PolyFinderGUI(QMainWindow):
             y += c * x ** i
         return y
 
-    def update_graph(self, Polinomials, generation):
+    def update_graph(self, Polinomials, f_data, generation):
         """
         Polinomials is a tuple of 5 p polinomials, and each p the coefficients of the polinomial
         """
-        x_start = 0  # change this, use the smallest X in the data
-        x_end = 10  # change this, use the biggest X in the data
-        slices = 1000  # smooth the curve
+        lowest = 1000
+        highest = -1000
+
+        f_x = (*(x[0] for x in f_data),)
+        f_y = (*(x[1] for x in f_data),)
+
+        for x in f_x:
+            if x < lowest:
+                lowest = x
+            if x > highest:
+                highest = x
+
+        x_start = lowest  # change this, use the smallest X in the data
+        x_end = highest  # change this, use the biggest X in the data
+        slices = len(f_x)  # smooth the curve
         x = linspace(x_start, x_end, slices)
 
-        # need exactly 5 colors for the individuals
-        colors = ('blue', 'green', 'yellow', 'orange', 'red')
+        plt.plot(f_x, f_y, color='black')
 
-        for i in range(len(colors)):
-            plt.plot(x, self.graph(x, Polinomials[i]))
+        for i, p in enumerate(Polinomials):
+            ys = ()
+            for x in f_x:
+                y = 0
+                for j, coeff in enumerate(p):
+                    y += coeff * x ** j
+                ys = (*ys, y)
+            plt.plot(f_x, ys)
 
         image_path = f'generation.png'
+
+        plt.title(f'generation: {generation}')
 
         plt.savefig(image_path)
         plt.clf()
