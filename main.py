@@ -15,17 +15,18 @@ import matplotlib.pyplot as plt
 import os
 import sys
 
-
-def main():
-    print(f'start a generation')
-    print(f'calculate population\'s fitness')
-    print(f'select mating pool')
-    print(f'do crossover')
-    print(f'check if going to mutate')
-    print(f'do mutation')
-    print(f'kill the weak ones')
-    print(f'check the fitness against confidence level/error')
-    print(f'if candidate is a chad, or too many generations, finish')
+"""
+steps:
+    start a generation
+    calculate population's fitness
+    select mating pool
+    do crossover
+    check if going to mutate
+    do mutation
+    kill the weak ones
+    check the fitness against confidence level/error
+    if candidate is a chad, or too many generations, finish
+"""
 
 
 class PolyFinderGUI(QMainWindow):
@@ -58,7 +59,6 @@ class PolyFinderGUI(QMainWindow):
         return y
 
     def update_graph(self, Polinomials, generation):
-        print(f'called update_graph')
         """
         Polinomials is a tuple of 5 p polinomials, and each p the coefficients of the polinomial
         """
@@ -75,8 +75,6 @@ class PolyFinderGUI(QMainWindow):
 
         image_path = f'generation.png'
 
-        print(f'image_path:{image_path}')
-
         plt.savefig(image_path)
         plt.clf()
 
@@ -87,7 +85,6 @@ class PolyFinderGUI(QMainWindow):
         self.ui.graphicsView.setScene(scene)
         self.sceneRef.deleteLater()
         self.sceneRef = scene
-        print('should have updated the fucking scene')
         QTimer.singleShot(0, lambda: self.updated.emit())
 
 
