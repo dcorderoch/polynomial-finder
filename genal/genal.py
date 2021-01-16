@@ -1,4 +1,5 @@
 from collections import namedtuple
+from PyQt5.QtCore import QObject, pyqtSignal
 
 import random
 
@@ -9,16 +10,11 @@ Polinomial = namedtuple(
     'Polinomial', [
         'x6', 'x5', 'x4', 'x3', 'x2', 'x1', 'x0'])
 
-# Adding values
-#S = Polinomial(0, 0, 0, 0, 0, 0, 0)
-
 MAX_POPULATION_SIZE = 20
 INITIAL_POPULATION_SIZE = 10
 MUTATION_THRESHOLD = 1e4
 ERROR_THRESHOLD = 1e-6
 MAX_CYCLES = 1e5
-
-# data = ((0, 0), (1, 1))
 
 # 2x^6 + 2x^5 + 2x^4 + 2x^3 + 2x^2 + 2x + 7
 f0_data = (
@@ -193,38 +189,56 @@ f3_data = (
 generation = PriorityQueue()
 
 
-def main():
-    gen0 = generate_generation(size=MAX_POPULATION_SIZE)
-    for i in gen0:
-        generation.put((calc_fitness(p=i, data=f0_data), 0, i))
+class PolyFinder(QObject):
+    generated = pyqtSignal(tuple, int)
+    initialized = pyqtSignal()
+
+    generation_number = 0
     cycles = 0
-    while True:
-        i = 0
-        tmp_gen = ()
-        while not generation.empty():
-            if i < MAX_POPULATION_SIZE:
-                tmp_gen = (*tmp_gen, generation.get())
-            else:
-                generation.get()
-            i += 1
-        # check if individual has max fitness
-        if tmp_gen[0][0] <= ERROR_THRESHOLD:
-            # show result in GUI
-            print(f'found almost perfect individual')
-            return
-        make_new_polinomials(tmp_gen)
-        for f, _, p in tmp_gen:
-            generation.put((f, 0, p))
-        # here the ranking has already been done
 
-        # check if timer has reached 5 minutes
-        if cycles >= MAX_CYCLES:
-            for p in tmp_gen:
-                print(p)
-            print(f'reached {MAX_CYCLES} cycles!')
-            return
+    def initialize(self):
+        self.generation_number = 0
+        gen0 = generate_generation(size=MAX_POPULATION_SIZE)
+        for i in gen0:
+            generation.put((calc_fitness(p=i, data=f0_data), 0, i))
+        self.initialized.emit()
 
-        cycles += 1
+    def start_crunching(self):
+        while True:
+            i = 0
+            tmp_gen = ()
+            while not generation.empty():
+                if i < MAX_POPULATION_SIZE:
+                    tmp_gen = (*tmp_gen, generation.get())
+                else:
+                    generation.get()
+                i += 1
+
+            if self.generation_number % 10 == 0:
+                tg = ()
+                for p_i in range(5):
+                    tg = (*tg, tmp_gen[p_i][2])
+                for p in tmp_gen:
+                    generation.put(p)
+                # tuple with the 5 fittest polinomials
+                self.generated.emit(tg, self.generation_number)
+                self.generation_number += 1
+                return
+            self.generation_number += 1
+
+            if tmp_gen[0][0] <= ERROR_THRESHOLD:
+                print(f'found almost perfect individual')
+                return
+
+            make_new_polinomials(tmp_gen)
+            for f, _, p in tmp_gen:
+                generation.put((f, 0, p))
+            if self.cycles >= MAX_CYCLES:
+                for p in tmp_gen:
+                    print(p)
+                print(f'reached {MAX_CYCLES} self.cycles!')
+                return
+            self.cycles += 1
 
 
 def mix_genetic_material(*, g1, g2, i):
