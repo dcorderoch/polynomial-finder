@@ -16,6 +16,7 @@ MAX_POPULATION_SIZE = 20
 INITIAL_POPULATION_SIZE = 10
 MUTATION_THRESHOLD = 1e4
 ERROR_THRESHOLD = 1e-6
+MAX_CYCLES = 1e5
 
 # data = ((0, 0), (1, 1))
 
@@ -195,7 +196,7 @@ generation = PriorityQueue()
 def main():
     gen0 = generate_generation(size=MAX_POPULATION_SIZE)
     for i in gen0:
-        generation.put((calc_fitness(p=i, data=f1_data), 0, i))
+        generation.put((calc_fitness(p=i, data=f0_data), 0, i))
     cycles = 0
     while True:
         i = 0
@@ -209,6 +210,7 @@ def main():
         # check if individual has max fitness
         if tmp_gen[0][0] <= ERROR_THRESHOLD:
             # show result in GUI
+            print(f'found almost perfect individual')
             return
         make_new_polinomials(tmp_gen)
         for f, _, p in tmp_gen:
@@ -216,10 +218,24 @@ def main():
         # here the ranking has already been done
 
         # check if timer has reached 5 minutes
-        if cycles >= 1000:
+        if cycles >= MAX_CYCLES:
+            for p in tmp_gen:
+                print(p)
+            print(f'reached {MAX_CYCLES} cycles!')
             return
 
         cycles += 1
+
+
+def mix_genetic_material(*, g1, g2, i):
+    switcher = {
+        0: (g1[i] - g2[i]),
+        1: (g1[i] + g2[i] / 2),
+        2: g1[i],
+        3: g2[i]
+    }
+    switch = random.getrandbits(2)  # from 0 to 3
+    return switcher.get(switch)
 
 
 def mix(*, ind1, ind2):
@@ -229,13 +245,13 @@ def mix(*, ind1, ind2):
         return mutate(ind1=ind1, ind2=ind2)
     else:
         return Polinomial(
-            (ind1[6] if bool(random.getrandbits(1)) else ind2[6]),  # x ^ 6
-            (ind1[5] if bool(random.getrandbits(1)) else ind2[5]),  # x ^ 5
-            (ind1[4] if bool(random.getrandbits(1)) else ind2[4]),  # x ^ 4
-            (ind1[3] if bool(random.getrandbits(1)) else ind2[3]),  # x ^ 3
-            (ind1[2] if bool(random.getrandbits(1)) else ind2[2]),  # x ^ 2
-            (ind1[1] if bool(random.getrandbits(1)) else ind2[1]),  # x ^ 1
-            (ind1[0] if bool(random.getrandbits(1)) else ind2[0]),  # constant
+            mix_genetic_material(g1=ind1, g2=ind2, i=6),  # x ^ 6
+            mix_genetic_material(g1=ind1, g2=ind2, i=5),  # x ^ 5
+            mix_genetic_material(g1=ind1, g2=ind2, i=4),  # x ^ 4
+            mix_genetic_material(g1=ind1, g2=ind2, i=3),  # x ^ 3
+            mix_genetic_material(g1=ind1, g2=ind2, i=2),  # x ^ 2
+            mix_genetic_material(g1=ind1, g2=ind2, i=1),  # x ^ 1
+            mix_genetic_material(g1=ind1, g2=ind2, i=0),  # constant
         )
     return p
 
@@ -254,7 +270,7 @@ def mutate(*, ind1, ind2):
 
 
 def make_new_polinomials(gen):
-    for _ in range(MAX_POPULATION_SIZE):
+    for _ in range(int(MAX_POPULATION_SIZE / 2)):
         select1 = random.randint(0, MAX_POPULATION_SIZE - 1)
 
         select2 = select1
