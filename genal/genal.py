@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 import random
+import time
 
 
 from queue import PriorityQueue
@@ -13,7 +14,7 @@ Polinomial = namedtuple(
 # Adding values
 #S = Polinomial(0, 0, 0, 0, 0, 0, 0)
 
-MAX_POPULATION_SIZE = 20
+MAX_POPULATION_SIZE = 80
 INITIAL_POPULATION_SIZE = 10
 MUTATION_THRESHOLD = 1e4
 ERROR_THRESHOLD = 1e-6
@@ -201,7 +202,7 @@ def main():
         generation.put((calc_fitness(p=i, data=f1_data), 0, i))
 
     # start timer
-    # initial_time= time()
+    initial_time = time.monotonic()
     cycles = 0
     # aqui comienza el ciclo de generaciones
     while True:
@@ -215,7 +216,7 @@ def main():
                 generation.get()
             i += 1
 
-        # check if individual has max fitness
+        # revisar si el idivididuo tiene el max fitness
         if tmp_gen[0][0] <= ERROR_THRESHOLD:
             # mostrar resultado en gui
             print("el resultado es", tmp_gen[1])
@@ -227,7 +228,12 @@ def main():
         # aqui ya hay hijos y se hizo el ranking
 
         # check if timer is 5 min
-        if cycles == 1000:
+        if (time.monotonic() - initial_time >= 300) or cycles == 150000: # si ya pasaron 5 minutos
+            if cycles == 90000:
+                print("maximo de ciclos")
+            else:
+                print("se llegó al máximo de tiempo")
+            print(tmp_gen[0][0])
             return
 
         cycles += 1
