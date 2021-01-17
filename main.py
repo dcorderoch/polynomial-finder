@@ -32,6 +32,18 @@ steps:
 class PolyFinderGUI(QMainWindow):
     updated = pyqtSignal()
 
+    def enable_start_btn(self, index):
+        self.ui.pushButton.setDisabled(False)
+        self.worker.set_data(index)
+        self.ui.f0Button.setDisabled(True)
+        self.ui.f1Button.setDisabled(True)
+        self.ui.f2Button.setDisabled(True)
+        self.ui.f3Button.setDisabled(True)
+
+    def enable_stop(self):
+        self.ui.pushButton.setDisabled(True)
+        self.ui.stopButton.setDisabled(False)
+
     def __init__(self):
         super().__init__()
         self.ui = Ui_Dialog()
@@ -46,7 +58,12 @@ class PolyFinderGUI(QMainWindow):
         self.worker.generated.connect(self.update_graph)
         self.worker.initialized.connect(self.worker.start_crunching)
         self.ui.pushButton.clicked.connect(self.worker.initialize)
+        self.ui.pushButton.clicked.connect(self.enable_stop)
         self.ui.stopButton.clicked.connect(self.worker.finish)
+        self.ui.f0Button.clicked.connect(lambda: self.enable_start_btn(0))
+        self.ui.f1Button.clicked.connect(lambda: self.enable_start_btn(1))
+        self.ui.f2Button.clicked.connect(lambda: self.enable_start_btn(2))
+        self.ui.f3Button.clicked.connect(lambda: self.enable_start_btn(3))
         self.updated.connect(self.worker.start_crunching)
 
         self.sceneRef = QObject()

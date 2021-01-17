@@ -192,12 +192,21 @@ generation = PriorityQueue()
 class PolyFinder(QObject):
     generated = pyqtSignal(tuple, tuple, int)
     initialized = pyqtSignal()
-    f_data = f0_data
+    f_data = f3_data
     error_threshold = 0
     end = False
 
     generation_number = 0
     cycles = 0
+
+    def set_data(self, index):
+        switcher = {
+            0: f0_data,
+            1: f1_data,
+            2: f2_data,
+            3: f3_data
+        }
+        self.f_data = switcher.get(index)
 
     def initialize(self):
         self.generation_number = 0
@@ -226,7 +235,7 @@ class PolyFinder(QObject):
         f_y = (*(x[1] for x in self.f_data),)
         f_f = (*(self.polimerize(x, p[2]) for x in f_x),)
         for i, _ in enumerate(f_y):
-            print(f'p{6-i}:{abs(f_f[i] - f_y[i])}')
+            print(f'p{i}:{f_f[i]} - {f_y[i]}')
         print(f'p(x): ', end='')
         print(f'{p[2][6]}x^6 +', end='')
         print(f'{p[2][5]}x^5 + ', end='')
@@ -360,7 +369,7 @@ def calc_fitness(*, p, f_data):
         tmp += p.x2 * (point[0] ** 2)
         tmp += p.x1 * (point[0] ** 1)
         tmp += p.x0  # constant, so no multiplication required
-        point_diff = abs(tmp - point[1]) ** 2
+        point_diff = (tmp - point[1]) ** 2
         shit = shit or point_diff > 5
         super_shit = super_shit or point_diff > 10
         fitness += point_diff
