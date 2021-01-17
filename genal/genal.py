@@ -2,6 +2,7 @@ from collections import namedtuple
 from PyQt5.QtCore import QObject, pyqtSignal
 
 import random
+import time
 
 from queue import PriorityQueue
 
@@ -199,6 +200,8 @@ class PolyFinder(QObject):
     generation_number = 0
     cycles = 0
 
+    start_time = time.monotonic()
+
     def set_data(self, index):
         switcher = {
             0: f0_data,
@@ -279,6 +282,8 @@ class PolyFinder(QObject):
                 )
 
             if self.generation_number % 10 == 0:
+                if self.generation_number % 100 == 0:
+                    print(f'tmp_gen[0]:{tmp_gen[0]}')
                 tg = ()
                 for p_i in range(5):
                     p = tmp_gen[p_i][2]
@@ -299,6 +304,12 @@ class PolyFinder(QObject):
             make_new_polinomials(tmp_gen, self.f_data)
             for f, age, p in tmp_gen:
                 generation.put((f, age, p))
+            if (time.monotonic() - self.start_time >= 300):
+                print('it\'s been 5 minutes...')
+                p = tmp_gen[0]
+                self.end = True
+                self.finalize_execution(p)
+                return
             if self.cycles >= MAX_CYCLES:
                 for p in tmp_gen:
                     print(p)
@@ -337,12 +348,12 @@ def mix(*, ind1, ind2):
 
 
 def make_new_polinomials(gen, f_data):
-    for _ in range(int(MAX_POPULATION_SIZE / 2)):
+    for _ in range(MAX_POPULATION_SIZE * 4):
         select1 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
 
         select2 = select1
         while select2 == select1:
-            select2 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
+            select2 = random.randint(0, MAX_POPULATION_SIZE - 1)
 
         _, _, i1 = gen[select1]
         _, _, i2 = gen[select2]
@@ -374,9 +385,9 @@ def calc_fitness(*, p, f_data):
         super_shit = super_shit or point_diff > 10
         fitness += point_diff
         if shit:
-            fitness += 100
+            fitness += 10
         if super_shit:
-            fitness += 1000
+            fitness += 100
     return fitness
 
 
