@@ -36,25 +36,25 @@ class PolyFinderGUI(QMainWindow):
     function = -1
 
     def enable_start_btn(self, index):
-        self.ui.pushButton.setDisabled(False)
+        self.ui.pushBtn.setDisabled(False)
         self.worker.set_data(index)
-        self.ui.f0Button.setDisabled(True)
-        self.ui.f1Button.setDisabled(True)
-        self.ui.f2Button.setDisabled(True)
-        self.ui.f3Button.setDisabled(True)
+        self.ui.f0Btn.setDisabled(True)
+        self.ui.f1Btn.setDisabled(True)
+        self.ui.f2Btn.setDisabled(True)
+        self.ui.f3Btn.setDisabled(True)
         self.function = index
 
     def enable_stop(self):
-        self.ui.pushButton.setDisabled(True)
-        self.ui.stopButton.setDisabled(False)
+        self.ui.pushBtn.setDisabled(True)
+        self.ui.stopBtn.setDisabled(False)
 
     def reset(self):
-        self.ui.f0Button.setDisabled(False)
-        self.ui.f1Button.setDisabled(False)
-        self.ui.f2Button.setDisabled(False)
-        self.ui.f3Button.setDisabled(False)
-        self.ui.pushButton.setDisabled(False)
-        self.ui.stopButton.setDisabled(True)
+        self.ui.f0Btn.setDisabled(False)
+        self.ui.f1Btn.setDisabled(False)
+        self.ui.f2Btn.setDisabled(False)
+        self.ui.f3Btn.setDisabled(False)
+        self.ui.pushBtn.setDisabled(False)
+        self.ui.stopBtn.setDisabled(True)
         self.resetting.emit()
 
     def __init__(self):
@@ -70,20 +70,25 @@ class PolyFinderGUI(QMainWindow):
 
         self.worker.generated.connect(self.update_graph)
         self.worker.initialized.connect(self.worker.start_crunching)
-        self.ui.pushButton.clicked.connect(self.worker.initialize)
-        self.ui.pushButton.clicked.connect(self.enable_stop)
-        self.ui.stopButton.clicked.connect(self.worker.finish)
-        self.ui.stopButton.clicked.connect(
-            lambda: self.ui.stopButton.setDisabled(True))
-        self.ui.stopButton.clicked.connect(
-            lambda: self.ui.resetButton.setDisabled(False))
-        self.ui.f0Button.clicked.connect(lambda: self.enable_start_btn(0))
-        self.ui.f1Button.clicked.connect(lambda: self.enable_start_btn(1))
-        self.ui.f2Button.clicked.connect(lambda: self.enable_start_btn(2))
-        self.ui.f3Button.clicked.connect(lambda: self.enable_start_btn(3))
-        self.ui.resetButton.clicked.connect(self.reset)
-        self.ui.resetButton.clicked.connect(
-            lambda: self.ui.resetButton.setDisabled(True))
+        self.ui.pushBtn.clicked.connect(self.worker.initialize)
+        self.ui.pushBtn.clicked.connect(self.enable_stop)
+        self.ui.stopBtn.clicked.connect(self.worker.finish)
+        self.ui.stopBtn.clicked.connect(
+            lambda: self.ui.stopBtn.setDisabled(True))
+        self.ui.stopBtn.clicked.connect(
+            lambda: self.ui.rstBtn.setDisabled(False))
+        self.ui.stopBtn.clicked.connect(
+            lambda: self.ui.quitBtn.setDisabled(False))
+        self.ui.f0Btn.clicked.connect(lambda: self.enable_start_btn(0))
+        self.ui.f1Btn.clicked.connect(lambda: self.enable_start_btn(1))
+        self.ui.f2Btn.clicked.connect(lambda: self.enable_start_btn(2))
+        self.ui.f3Btn.clicked.connect(lambda: self.enable_start_btn(3))
+        self.ui.rstBtn.clicked.connect(self.reset)
+        self.ui.rstBtn.clicked.connect(
+            lambda: self.ui.rstBtn.setDisabled(True))
+        self.ui.rstBtn.clicked.connect(
+            lambda: self.ui.quitBtn.setDisabled(True))
+        self.ui.quitBtn.clicked.connect(lambda: QApplication.quit())
         self.resetting.connect(self.worker.reset)
         self.updated.connect(self.worker.start_crunching)
 
