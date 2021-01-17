@@ -13,7 +13,7 @@ Polinomial = namedtuple(
 MAX_POPULATION_SIZE = 50
 INITIAL_POPULATION_SIZE = 10
 MUTATION_THRESHOLD = 100
-ERROR_THRESHOLD = 1e-6
+ERROR_THRESHOLD = 0.05
 MAX_CYCLES = 1e5
 
 # 2x^6 + 2x^5 + 2x^4 + 2x^3 + 2x^2 + 2x + 7
@@ -193,6 +193,7 @@ class PolyFinder(QObject):
     generated = pyqtSignal(tuple, tuple, int)
     initialized = pyqtSignal()
     f_data = f0_data
+    error_threshold = 0
     end = False
 
     generation_number = 0
@@ -200,6 +201,9 @@ class PolyFinder(QObject):
 
     def initialize(self):
         self.generation_number = 0
+        for p in self.f_data:
+            self.error_threshold += ERROR_THRESHOLD * p[0]
+        print(f'self.error_threshold:{self.error_threshold}')
         gen0 = generate_generation(size=MAX_POPULATION_SIZE)
         for i in gen0:
             generation.put((calc_fitness(p=i, f_data=self.f_data), 0, i))
@@ -278,7 +282,7 @@ class PolyFinder(QObject):
                 return
             self.generation_number += 1
 
-            if tmp_gen[0][0] <= ERROR_THRESHOLD or self.end:
+            if tmp_gen[0][0] <= self.error_threshold or self.end:
                 p = tmp_gen[0]
                 self.finalize_execution(p)
                 return
@@ -299,9 +303,13 @@ def mix_genetic_material(*, g1, g2, i, mut):
         0: (g1[i] - g2[i]),
         1: (g1[i] + g2[i]),
         2: -g1[i],
-        3: -g2[i]
+        3: -g2[i],
+        4: g1[i] / 2,
+        5: g2[i] / 2,
+        6: (g1[i] + g2[i]) / 2,
+        7: (g1[i] - g2[i]) / 2
     }
-    switch = random.getrandbits(2)  # from 0 to 3
+    switch = random.getrandbits(3)  # from 0 to 3
     return switcher.get(switch) if not mut else random.uniform(-2.0, 2.0)
 
 
