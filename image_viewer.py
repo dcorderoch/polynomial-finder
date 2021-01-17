@@ -25,20 +25,25 @@ class Ui_Dialog(object):
         self.stopButton.setObjectName("stopButton")
         self.stopButton.setDisabled(True)
 
+        self.resetButton = QtWidgets.QPushButton(Dialog)
+        self.resetButton.setGeometry(QtCore.QRect(190, 40, 75, 23))
+        self.resetButton.setObjectName("resetButton")
+        self.resetButton.setDisabled(True)
+
         self.f0Button = QtWidgets.QPushButton(Dialog)
-        self.f0Button.setGeometry(QtCore.QRect(520, 40, 75, 23))
+        self.f0Button.setGeometry(QtCore.QRect(295, 40, 75, 23))
         self.f0Button.setObjectName("f0Button")
 
         self.f1Button = QtWidgets.QPushButton(Dialog)
-        self.f1Button.setGeometry(QtCore.QRect(445, 40, 75, 23))
+        self.f1Button.setGeometry(QtCore.QRect(370, 40, 75, 23))
         self.f1Button.setObjectName("f1Button")
 
         self.f2Button = QtWidgets.QPushButton(Dialog)
-        self.f2Button.setGeometry(QtCore.QRect(370, 40, 75, 23))
+        self.f2Button.setGeometry(QtCore.QRect(445, 40, 75, 23))
         self.f2Button.setObjectName("f2Button")
 
         self.f3Button = QtWidgets.QPushButton(Dialog)
-        self.f3Button.setGeometry(QtCore.QRect(295, 40, 75, 23))
+        self.f3Button.setGeometry(QtCore.QRect(520, 40, 75, 23))
         self.f3Button.setObjectName("f3Button")
 
         self.retranslateUi(Dialog)
@@ -53,3 +58,4 @@ class Ui_Dialog(object):
         self.f1Button.setText(_translate("Dialog", "f1"))
         self.f2Button.setText(_translate("Dialog", "f2"))
         self.f3Button.setText(_translate("Dialog", "f3"))
+        self.resetButton.setText(_translate("Dialog", "reset"))

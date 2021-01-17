@@ -13,7 +13,8 @@ Polinomial = namedtuple(
 
 MAX_POPULATION_SIZE = 50
 INITIAL_POPULATION_SIZE = 10
-MUTATION_THRESHOLD = 100
+MUTATION_THRESHOLD = 0.5
+MUTATION_CHANCE_SPACE = 100
 ERROR_THRESHOLD = 0.05
 MAX_CYCLES = 1e5
 
@@ -190,10 +191,20 @@ f3_data = (
 generation = PriorityQueue()
 
 
+def polimerize(x, coeffs):
+    return coeffs.x6 * (x ** 6) \
+        + coeffs.x5 * (x ** 5) \
+        + coeffs.x4 * (x ** 4) \
+        + coeffs.x3 * (x ** 3) \
+        + coeffs.x2 * (x ** 2) \
+        + coeffs.x1 * (x ** 1) \
+        + coeffs.x0  # constant, so no multiplication required
+
+
 class PolyFinder(QObject):
     generated = pyqtSignal(tuple, tuple, int)
     initialized = pyqtSignal()
-    f_data = f3_data
+    f_data = ()
     error_threshold = 0
     end = False
 
@@ -201,6 +212,14 @@ class PolyFinder(QObject):
     cycles = 0
 
     start_time = time.monotonic()
+
+    def reset(self):
+        self.generation_number = 0
+        self.cycles = 0
+        self.error_threshold = 0
+        while not generation.empty():
+            generation.get()
+        self.end = False
 
     def set_data(self, index):
         switcher = {
@@ -224,29 +243,23 @@ class PolyFinder(QObject):
     def finish(self):
         self.end = True
 
-    def polimerize(self, x, coeffs):
-        y = 0
-        for i, c in enumerate(coeffs):
-            y += c * x ** i
-        return y
-
     def finalize_execution(self, p):
         if not self.end:
             print(f'found almost perfect individual')
         print(f'fitness:{p[0]}')
         f_x = (*(x[0] for x in self.f_data),)
         f_y = (*(x[1] for x in self.f_data),)
-        f_f = (*(self.polimerize(x, p[2]) for x in f_x),)
+        f_f = (*(polimerize(x, p[2]) for x in f_x),)
         for i, _ in enumerate(f_y):
-            print(f'p{i}:{f_f[i]} - {f_y[i]}')
+            print(f'p{i}:{f_f[i]} vs {f_y[i]}')
         print(f'p(x): ', end='')
-        print(f'{p[2][6]}x^6 +', end='')
-        print(f'{p[2][5]}x^5 + ', end='')
-        print(f'{p[2][4]}x^4 + ', end='')
-        print(f'{p[2][3]}x^3 + ', end='')
-        print(f'{p[2][2]}x^2 + ', end='')
-        print(f'{p[2][1]}x + ', end='')
-        print(f'{p[2][0]}')
+        print(f'{p[2].x6}x^6 +', end='')
+        print(f'{p[2].x5}x^5 + ', end='')
+        print(f'{p[2].x4}x^4 + ', end='')
+        print(f'{p[2].x3}x^3 + ', end='')
+        print(f'{p[2].x2}x^2 + ', end='')
+        print(f'{p[2].x1}x + ', end='')
+        print(f'{p[2].x0}')
         print(f'END')
 
     def start_crunching(self):
@@ -259,19 +272,19 @@ class PolyFinder(QObject):
                 else:
                     generation.get()
                 i += 1
-            chance_to_mutate = random.uniform(0, MUTATION_THRESHOLD)
-            m = (MUTATION_THRESHOLD - chance_to_mutate <= 0.5)
+            chance_to_mutate = random.uniform(0, MUTATION_CHANCE_SPACE)
+            m = (MUTATION_CHANCE_SPACE - chance_to_mutate <= MUTATION_THRESHOLD)
             if m:
                 _, _, p = tmp_gen[0]  # (fitness, 0, polinomial)
-                switch = random.getrandbits(1)  # from 0 to 3
+                switch = random.getrandbits(1)  # from 0 to 1
                 mutant = Polinomial(
-                    p[6] - 0.1 - switch * 0.1,
-                    p[5] - 0.1 - switch * 0.1,
-                    p[4] - 0.1 - switch * 0.1,
-                    p[3] - 0.1 - switch * 0.1,
-                    p[2] - 0.1 - switch * 0.1,
-                    p[1] - 0.1 - switch * 0.1,
-                    p[0] - 0.1 - switch * 0.1)
+                    p[0] - 0.1 - switch * 0.5,
+                    p[1] - 0.1 - switch * 0.5,
+                    p[2] - 0.1 - switch * 0.5,
+                    p[3] - 0.1 - switch * 0.5,
+                    p[4] - 0.1 - switch * 0.5,
+                    p[5] - 0.1 - switch * 0.5,
+                    p[6] - 0.1 - switch * 0.5)
                 tmp_gen = (
                     (calc_fitness(
                         p=mutant,
@@ -284,6 +297,11 @@ class PolyFinder(QObject):
             if self.generation_number % 10 == 0:
                 if self.generation_number % 100 == 0:
                     print(f'tmp_gen[0]:{tmp_gen[0]}')
+                    print(f'tmp_gen[1]:{tmp_gen[1]}')
+                    print(f'tmp_gen[2]:{tmp_gen[2]}')
+                    print(f'tmp_gen[3]:{tmp_gen[3]}')
+                    print(f'tmp_gen[4]:{tmp_gen[4]}')
+                    print(f'')
                 tg = ()
                 for p_i in range(5):
                     p = tmp_gen[p_i][2]
@@ -319,6 +337,9 @@ class PolyFinder(QObject):
 
 
 def mix_genetic_material(*, g1, g2, i, mut):
+    if mut:
+        return random.uniform(-2.0, 2.0)
+
     switcher = {
         0: (g1[i] - g2[i]),
         1: (g1[i] + g2[i]),
@@ -329,21 +350,21 @@ def mix_genetic_material(*, g1, g2, i, mut):
         6: (g1[i] + g2[i]) / 2,
         7: (g1[i] - g2[i]) / 2
     }
-    switch = random.getrandbits(3)  # from 0 to 3
-    return switcher.get(switch) if not mut else random.uniform(-2.0, 2.0)
+    switch = random.getrandbits(3)  # from 0 to 7
+    return switcher.get(switch)
 
 
 def mix(*, ind1, ind2):
-    chance_to_mutate = random.uniform(0, MUTATION_THRESHOLD)
-    m = (MUTATION_THRESHOLD - chance_to_mutate <= 0.5)
+    chance_to_mutate = random.uniform(0, MUTATION_CHANCE_SPACE)
+    m = (MUTATION_CHANCE_SPACE - chance_to_mutate <= MUTATION_THRESHOLD)
     return Polinomial(
-        mix_genetic_material(g1=ind1, g2=ind2, i=6, mut=m),  # x ^ 6
-        mix_genetic_material(g1=ind1, g2=ind2, i=5, mut=m),  # x ^ 5
-        mix_genetic_material(g1=ind1, g2=ind2, i=4, mut=m),  # x ^ 4
+        mix_genetic_material(g1=ind1, g2=ind2, i=0, mut=m),  # x ^ 6
+        mix_genetic_material(g1=ind1, g2=ind2, i=1, mut=m),  # x ^ 5
+        mix_genetic_material(g1=ind1, g2=ind2, i=2, mut=m),  # x ^ 4
         mix_genetic_material(g1=ind1, g2=ind2, i=3, mut=m),  # x ^ 3
-        mix_genetic_material(g1=ind1, g2=ind2, i=2, mut=m),  # x ^ 2
-        mix_genetic_material(g1=ind1, g2=ind2, i=1, mut=m),  # x ^ 1
-        mix_genetic_material(g1=ind1, g2=ind2, i=0, mut=m),  # constant
+        mix_genetic_material(g1=ind1, g2=ind2, i=4, mut=m),  # x ^ 2
+        mix_genetic_material(g1=ind1, g2=ind2, i=5, mut=m),  # x ^ 1
+        mix_genetic_material(g1=ind1, g2=ind2, i=6, mut=m),  # constant
     )
 
 
@@ -353,7 +374,7 @@ def make_new_polinomials(gen, f_data):
 
         select2 = select1
         while select2 == select1:
-            select2 = random.randint(0, MAX_POPULATION_SIZE - 1)
+            select2 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
 
         _, _, i1 = gen[select1]
         _, _, i2 = gen[select2]
@@ -367,27 +388,27 @@ def calc_fitness(*, p, f_data):
     """
     the lower the fitness, the better (the more fit it is)
     """
+
+    f_x = (*(x[0] for x in f_data),)
+    f_y = (*(x[1] for x in f_data),)
+    f_f = (*(polimerize(x, p) for x in f_x),)
+
     fitness = 0
     shit = False
     super_shit = False
-    tmp = 0
-    for point in f_data:
-        tmp = 0
-        tmp += p.x6 * (point[0] ** 6)
-        tmp += p.x5 * (point[0] ** 5)
-        tmp += p.x4 * (point[0] ** 4)
-        tmp += p.x3 * (point[0] ** 3)
-        tmp += p.x2 * (point[0] ** 2)
-        tmp += p.x1 * (point[0] ** 1)
-        tmp += p.x0  # constant, so no multiplication required
-        point_diff = (tmp - point[1]) ** 2
+    ultra_shit = False
+    for i, y in enumerate(f_y):
+        point_diff = abs(y - f_f[i])
         shit = shit or point_diff > 5
         super_shit = super_shit or point_diff > 10
+        ultra_shit = ultra_shit or point_diff > 20
         fitness += point_diff
         if shit:
             fitness += 10
         if super_shit:
             fitness += 100
+        if ultra_shit:
+            fitness += 1000
     return fitness
 
 
@@ -396,13 +417,13 @@ def generate_generation(*, size):
     for i in range(size):
         gen = (*gen,
                Polinomial(
-                   random.uniform(70.0, 100.0),  # x ^ 6
-                   random.uniform(70.0, 100.0),  # x ^ 5
-                   random.uniform(70.0, 100.0),  # x ^ 4
-                   random.uniform(70.0, 100.0),  # x ^ 3
-                   random.uniform(70.0, 100.0),  # x ^ 2
-                   random.uniform(70.0, 100.0),  # x ^ 1
-                   random.uniform(70.0, 100.0)  # constant
+                   random.uniform(700.0, 1000.0),  # x ^ 6
+                   random.uniform(700.0, 1000.0),  # x ^ 5
+                   random.uniform(700.0, 1000.0),  # x ^ 4
+                   random.uniform(700.0, 1000.0),  # x ^ 3
+                   random.uniform(700.0, 1000.0),  # x ^ 2
+                   random.uniform(700.0, 1000.0),  # x ^ 1
+                   random.uniform(700.0, 1000.0)  # constant
                )
                )
     return gen

@@ -31,6 +31,7 @@ steps:
 
 class PolyFinderGUI(QMainWindow):
     updated = pyqtSignal()
+    resetting = pyqtSignal()
 
     function = -1
 
@@ -46,6 +47,15 @@ class PolyFinderGUI(QMainWindow):
     def enable_stop(self):
         self.ui.pushButton.setDisabled(True)
         self.ui.stopButton.setDisabled(False)
+
+    def reset(self):
+        self.ui.f0Button.setDisabled(False)
+        self.ui.f1Button.setDisabled(False)
+        self.ui.f2Button.setDisabled(False)
+        self.ui.f3Button.setDisabled(False)
+        self.ui.pushButton.setDisabled(False)
+        self.ui.stopButton.setDisabled(True)
+        self.resetting.emit()
 
     def __init__(self):
         super().__init__()
@@ -63,10 +73,18 @@ class PolyFinderGUI(QMainWindow):
         self.ui.pushButton.clicked.connect(self.worker.initialize)
         self.ui.pushButton.clicked.connect(self.enable_stop)
         self.ui.stopButton.clicked.connect(self.worker.finish)
+        self.ui.stopButton.clicked.connect(
+            lambda: self.ui.stopButton.setDisabled(True))
+        self.ui.stopButton.clicked.connect(
+            lambda: self.ui.resetButton.setDisabled(False))
         self.ui.f0Button.clicked.connect(lambda: self.enable_start_btn(0))
         self.ui.f1Button.clicked.connect(lambda: self.enable_start_btn(1))
         self.ui.f2Button.clicked.connect(lambda: self.enable_start_btn(2))
         self.ui.f3Button.clicked.connect(lambda: self.enable_start_btn(3))
+        self.ui.resetButton.clicked.connect(self.reset)
+        self.ui.resetButton.clicked.connect(
+            lambda: self.ui.resetButton.setDisabled(True))
+        self.resetting.connect(self.worker.reset)
         self.updated.connect(self.worker.start_crunching)
 
         self.sceneRef = QObject()
