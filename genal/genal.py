@@ -385,13 +385,13 @@ def generate_generation(*, size):
     for i in range(size):
         gen = (*gen,
                Polinomial(
-                   random.uniform(-1.0, 1.0),  # x ^ 6
-                   random.uniform(-1.0, 1.0),  # x ^ 5
-                   random.uniform(-1.0, 1.0),  # x ^ 4
-                   random.uniform(-1.0, 1.0),  # x ^ 3
-                   random.uniform(-1.0, 1.0),  # x ^ 2
-                   random.uniform(-1.0, 1.0),  # x ^ 1
-                   random.uniform(-1.0, 1.0)  # constant
+                   random.uniform(70.0, 100.0),  # x ^ 6
+                   random.uniform(70.0, 100.0),  # x ^ 5
+                   random.uniform(70.0, 100.0),  # x ^ 4
+                   random.uniform(70.0, 100.0),  # x ^ 3
+                   random.uniform(70.0, 100.0),  # x ^ 2
+                   random.uniform(70.0, 100.0),  # x ^ 1
+                   random.uniform(70.0, 100.0)  # constant
                )
                )
     return gen

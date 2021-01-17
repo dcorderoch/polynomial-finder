@@ -32,6 +32,8 @@ steps:
 class PolyFinderGUI(QMainWindow):
     updated = pyqtSignal()
 
+    function = -1
+
     def enable_start_btn(self, index):
         self.ui.pushButton.setDisabled(False)
         self.worker.set_data(index)
@@ -39,6 +41,7 @@ class PolyFinderGUI(QMainWindow):
         self.ui.f1Button.setDisabled(True)
         self.ui.f2Button.setDisabled(True)
         self.ui.f3Button.setDisabled(True)
+        self.function = index
 
     def enable_stop(self):
         self.ui.pushButton.setDisabled(True)
@@ -99,6 +102,8 @@ class PolyFinderGUI(QMainWindow):
 
         plt.plot(f_x, f_y, color='black')
 
+        colors = ('#0000CC', '#0088FF', '#00CC00', '#CC8800', '#FF0000')
+
         for i, p in enumerate(Polinomials):
             ys = ()
             for x in f_x:
@@ -106,11 +111,12 @@ class PolyFinderGUI(QMainWindow):
                 for j, coeff in enumerate(p):
                     y += coeff * x ** j
                 ys = (*ys, y)
-            plt.plot(f_x, ys)
+            plt.plot(f_x, ys, color=colors[i], label=f'rank {i+1}')
 
         image_path = f'generation.png'
 
-        plt.title(f'generation: {generation}')
+        plt.title(f'function: {self.function} - generation: {generation}')
+        plt.legend()
 
         plt.savefig(image_path)
         plt.clf()
