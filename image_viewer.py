@@ -17,6 +17,9 @@ class Ui_Dialog(object):
         self.pushButton = QtWidgets.QPushButton(Dialog)
         self.pushButton.setGeometry(QtCore.QRect(670, 40, 75, 23))
         self.pushButton.setObjectName("pushButton")
+        self.stopButton = QtWidgets.QPushButton(Dialog)
+        self.stopButton.setGeometry(QtCore.QRect(590, 40, 75, 23))
+        self.stopButton.setObjectName("stopButton")
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -25,3 +28,4 @@ class Ui_Dialog(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Image Viewer"))
         self.pushButton.setText(_translate("Dialog", "start"))
+        self.stopButton.setText(_translate("Dialog", "stop"))

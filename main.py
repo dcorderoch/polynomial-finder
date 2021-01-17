@@ -46,6 +46,7 @@ class PolyFinderGUI(QMainWindow):
         self.worker.generated.connect(self.update_graph)
         self.worker.initialized.connect(self.worker.start_crunching)
         self.ui.pushButton.clicked.connect(self.worker.initialize)
+        self.ui.stopButton.clicked.connect(self.worker.finish)
         self.updated.connect(self.worker.start_crunching)
 
         self.sceneRef = QObject()

@@ -10,7 +10,7 @@ Polinomial = namedtuple(
     'Polinomial', [
         'x6', 'x5', 'x4', 'x3', 'x2', 'x1', 'x0'])
 
-MAX_POPULATION_SIZE = 100
+MAX_POPULATION_SIZE = 50
 INITIAL_POPULATION_SIZE = 10
 MUTATION_THRESHOLD = 100
 ERROR_THRESHOLD = 1e-6
@@ -192,7 +192,8 @@ generation = PriorityQueue()
 class PolyFinder(QObject):
     generated = pyqtSignal(tuple, tuple, int)
     initialized = pyqtSignal()
-    f_data = f1_data
+    f_data = f0_data
+    end = False
 
     generation_number = 0
     cycles = 0
@@ -204,11 +205,33 @@ class PolyFinder(QObject):
             generation.put((calc_fitness(p=i, f_data=self.f_data), 0, i))
         self.initialized.emit()
 
+    def finish(self):
+        self.end = True
+
     def polimerize(self, x, coeffs):
         y = 0
         for i, c in enumerate(coeffs):
             y += c * x ** i
         return y
+
+    def finalize_execution(self, p):
+        if not self.end:
+            print(f'found almost perfect individual')
+        print(f'fitness:{p[0]}')
+        f_x = (*(x[0] for x in self.f_data),)
+        f_y = (*(x[1] for x in self.f_data),)
+        f_f = (*(self.polimerize(x, p[2]) for x in f_x),)
+        for i, _ in enumerate(f_y):
+            print(f'p{6-i}:{abs(f_f[i] - f_y[i])}')
+        print(f'p(x): ', end='')
+        print(f'{p[2][6]}x^6 +', end='')
+        print(f'{p[2][5]}x^5 + ', end='')
+        print(f'{p[2][4]}x^4 + ', end='')
+        print(f'{p[2][3]}x^3 + ', end='')
+        print(f'{p[2][2]}x^2 + ', end='')
+        print(f'{p[2][1]}x + ', end='')
+        print(f'{p[2][0]}')
+        print(f'END')
 
     def start_crunching(self):
         while True:
@@ -224,8 +247,15 @@ class PolyFinder(QObject):
             m = (MUTATION_THRESHOLD - chance_to_mutate <= 0.5)
             if m:
                 _, _, p = tmp_gen[0]  # (fitness, 0, polinomial)
-                mutant = Polinomial(-p[6], -p[5], -
-                                    p[4], -p[3], -p[2], -p[1], -p[0])
+                switch = random.getrandbits(1)  # from 0 to 3
+                mutant = Polinomial(
+                    p[6] - 0.1 - switch * 0.1,
+                    p[5] - 0.1 - switch * 0.1,
+                    p[4] - 0.1 - switch * 0.1,
+                    p[3] - 0.1 - switch * 0.1,
+                    p[2] - 0.1 - switch * 0.1,
+                    p[1] - 0.1 - switch * 0.1,
+                    p[0] - 0.1 - switch * 0.1)
                 tmp_gen = (
                     (calc_fitness(
                         p=mutant,
@@ -238,7 +268,8 @@ class PolyFinder(QObject):
             if self.generation_number % 10 == 0:
                 tg = ()
                 for p_i in range(5):
-                    tg = (*tg, tmp_gen[p_i][2])
+                    p = tmp_gen[p_i][2]
+                    tg = (*tg, p)
                 for p in tmp_gen:
                     generation.put(p)
                 # tuple with the 5 fittest polinomials
@@ -247,24 +278,14 @@ class PolyFinder(QObject):
                 return
             self.generation_number += 1
 
-            if tmp_gen[0][0] <= ERROR_THRESHOLD:
+            if tmp_gen[0][0] <= ERROR_THRESHOLD or self.end:
                 p = tmp_gen[0]
-                print(f'found almost perfect individual')
-                print(f'fitness:{p[0]}')
-                f_x = (*(x[0] for x in self.f_data),)
-                f_y = (*(x[1] for x in self.f_data),)
-                f_f = (*(self.polimerize(x, p) for x in f_x),)
-                print(f'f_y:{f_y}')
-                print(f'f_f:{f_f}')
-                for i, _ in enumerate(f_y):
-                    print(f'p{i+1}:{abs(f_f[i] - f_y[i])}')
-                print(
-                    f'formula: {p[6]}x^6 + {p[5]}x^5 + {p[4]}x^4 + {p[3]}x^3 + {p[2]}x^2 + {p[1]}x + {p[0]}')
+                self.finalize_execution(p)
                 return
 
             make_new_polinomials(tmp_gen, self.f_data)
-            for f, _, p in tmp_gen:
-                generation.put((f, 0, p))
+            for f, age, p in tmp_gen:
+                generation.put((f, age, p))
             if self.cycles >= MAX_CYCLES:
                 for p in tmp_gen:
                     print(p)
@@ -276,9 +297,11 @@ class PolyFinder(QObject):
 def mix_genetic_material(*, g1, g2, i, mut):
     switcher = {
         0: (g1[i] - g2[i]),
-        1: (g1[i] + g2[i])
+        1: (g1[i] + g2[i]),
+        2: -g1[i],
+        3: -g2[i]
     }
-    switch = random.getrandbits(1)  # from 0 to 3
+    switch = random.getrandbits(2)  # from 0 to 3
     return switcher.get(switch) if not mut else random.uniform(-2.0, 2.0)
 
 
@@ -319,6 +342,7 @@ def calc_fitness(*, p, f_data):
     fitness = 0
     shit = False
     super_shit = False
+    tmp = 0
     for point in f_data:
         tmp = 0
         tmp += p.x6 * (point[0] ** 6)
@@ -329,8 +353,8 @@ def calc_fitness(*, p, f_data):
         tmp += p.x1 * (point[0] ** 1)
         tmp += p.x0  # constant, so no multiplication required
         point_diff = abs(tmp - point[1]) ** 2
-        shit = shit or point_diff > 10
-        super_shit = super_shit or point_diff > 20
+        shit = shit or point_diff > 5
+        super_shit = super_shit or point_diff > 10
         fitness += point_diff
         if shit:
             fitness += 100
