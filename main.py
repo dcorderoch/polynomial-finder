@@ -34,6 +34,7 @@ class PolyFinderGUI(QMainWindow):
     resetting = pyqtSignal()
 
     function = -1
+    end = False
 
     def enable_start_btn(self, index):
         self.ui.pushBtn.setDisabled(False)
@@ -57,6 +58,9 @@ class PolyFinderGUI(QMainWindow):
         self.ui.stopBtn.setDisabled(True)
         self.resetting.emit()
 
+    def set_end(self, value):
+        self.end = value
+
     def __init__(self):
         super().__init__()
         self.ui = Ui_Dialog()
@@ -79,6 +83,7 @@ class PolyFinderGUI(QMainWindow):
             lambda: self.ui.rstBtn.setDisabled(False))
         self.ui.stopBtn.clicked.connect(
             lambda: self.ui.quitBtn.setDisabled(False))
+        self.ui.stopBtn.clicked.connect(lambda: self.set_end(True))
         self.ui.f0Btn.clicked.connect(lambda: self.enable_start_btn(0))
         self.ui.f1Btn.clicked.connect(lambda: self.enable_start_btn(1))
         self.ui.f2Btn.clicked.connect(lambda: self.enable_start_btn(2))
@@ -88,6 +93,7 @@ class PolyFinderGUI(QMainWindow):
             lambda: self.ui.rstBtn.setDisabled(True))
         self.ui.rstBtn.clicked.connect(
             lambda: self.ui.quitBtn.setDisabled(True))
+        self.ui.rstBtn.clicked.connect(lambda: self.set_end(False))
         self.ui.quitBtn.clicked.connect(lambda: QApplication.quit())
         self.resetting.connect(self.worker.reset)
         self.updated.connect(self.worker.start_crunching)
@@ -128,12 +134,7 @@ class PolyFinderGUI(QMainWindow):
         colors = ('#0000CC', '#0088FF', '#00CC00', '#CC8800', '#FF0000')
 
         for i, p in enumerate(Polinomials):
-            ys = ()
-            for x in f_x:
-                y = 0
-                for j, coeff in enumerate(p):
-                    y += coeff * x ** j
-                ys = (*ys, y)
+            ys = (*(genal.polimerize(x, p) for x in f_x),)
             plt.plot(f_x, ys, color=colors[i], label=f'rank {i+1}')
 
         image_path = f'generation.png'
@@ -151,6 +152,8 @@ class PolyFinderGUI(QMainWindow):
         self.ui.graphicsView.setScene(scene)
         self.sceneRef.deleteLater()
         self.sceneRef = scene
+        if self.end:
+            return
         QTimer.singleShot(0, lambda: self.updated.emit())
 
 
