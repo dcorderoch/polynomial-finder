@@ -11,9 +11,9 @@ Polinomial = namedtuple(
     'Polinomial', [
         'x6', 'x5', 'x4', 'x3', 'x2', 'x1', 'x0'])
 
-MAX_POPULATION_SIZE = 50
+MAX_POPULATION_SIZE = 100
 INITIAL_POPULATION_SIZE = 10
-MUTATION_THRESHOLD = 0.5
+MUTATION_THRESHOLD = 1
 MUTATION_CHANCE_SPACE = 100
 ERROR_THRESHOLD = 0.05
 MAX_CYCLES = 1e5
@@ -189,10 +189,6 @@ f3_data = (
     (3.000000000000000, -23.999999999999800)
 )
 
-generation = PriorityQueue()
-mutation_rate = MUTATION_RATE
-mutation_probability = MUTATION_THRESHOLD
-
 
 def polimerize(x, coeffs):
     return coeffs.x6 * (x ** 6) \
@@ -215,6 +211,11 @@ class PolyFinder(QObject):
     cycles = 0
 
     previous_fitness = 999
+    repeated_fitness = 0
+
+    generation = PriorityQueue()
+    mutation_rate = MUTATION_RATE
+    mutation_probability = MUTATION_THRESHOLD
 
     start_time = time.monotonic()
 
@@ -222,8 +223,8 @@ class PolyFinder(QObject):
         self.generation_number = 0
         self.cycles = 0
         self.error_threshold = 0
-        while not generation.empty():
-            generation.get()
+        while not self.generation.empty():
+            self.generation.get()
         self.end = False
 
     def set_data(self, index):
@@ -241,7 +242,8 @@ class PolyFinder(QObject):
         print(f'self.error_threshold:{self.error_threshold}')
         gen0 = generate_generation(size=MAX_POPULATION_SIZE)
         for i in gen0:
-            generation.put((calc_fitness(p=i, f_data=self.f_data), 0, i))
+            self.generation.put(
+                (self.calc_fitness(p=i, f_data=self.f_data), 0, i))
         self.initialized.emit()
 
     def finish(self):
@@ -270,35 +272,14 @@ class PolyFinder(QObject):
         while True:
             i = 0
             tmp_gen = ()
-            while not generation.empty():
+            while not self.generation.empty():
                 if i < MAX_POPULATION_SIZE:
-                    tmp_gen = (*tmp_gen, generation.get())
+                    tmp_gen = (*tmp_gen, self.generation.get())
                 else:
-                    generation.get()
+                    self.generation.get()
                 i += 1
-            # chance_to_mutate = random.uniform(0, MUTATION_CHANCE_SPACE)
-            # m = (MUTATION_CHANCE_SPACE - chance_to_mutate <= MUTATION_THRESHOLD)
-            # if m:
-            #     _, _, p = tmp_gen[0]  # (fitness, 0, polinomial)
-            #     switch = random.getrandbits(1)  # from 0 to 1
-            #     mutant = Polinomial(
-            #         p[0] - 0.1 - switch * 0.5,
-            #         p[1] - 0.1 - switch * 0.5,
-            #         p[2] - 0.1 - switch * 0.5,
-            #         p[3] - 0.1 - switch * 0.5,
-            #         p[4] - 0.1 - switch * 0.5,
-            #         p[5] - 0.1 - switch * 0.5,
-            #         p[6] - 0.1 - switch * 0.5)
-            #     tmp_gen = (
-            #         (calc_fitness(
-            #             p=mutant,
-            #             f_data=self.f_data),
-            #             0,
-            #             mutant),
-            #         *tmp_gen,
-            #     )
 
-            if self.generation_number % 10 == 0:
+            if self.generation_number % 50 == 0:
                 if self.generation_number % 100 == 0:
                     print(f'tmp_gen[0]:{tmp_gen[0]}')
                     print(f'tmp_gen[1]:{tmp_gen[1]}')
@@ -311,7 +292,7 @@ class PolyFinder(QObject):
                     p = tmp_gen[p_i][2]
                     tg = (*tg, p)
                 for p in tmp_gen:
-                    generation.put(p)
+                    self.generation.put(p)
                 # tuple with the 5 fittest polinomials
                 self.generated.emit(tg, self.f_data, self.generation_number)
                 self.generation_number += 1
@@ -322,22 +303,28 @@ class PolyFinder(QObject):
             if self.generation_number % 10 == 0:
                 if self.previous_fitness != tmp_gen[0][0]:
                     self.previous_fitness = tmp_gen[0][0]
-                    mutation_rate = MUTATION_RATE
-                    mutation_probability = MUTATION_THRESHOLD
+                    self.mutation_rate = MUTATION_RATE
+                    self.mutation_probability = MUTATION_THRESHOLD
                 else:
                     # self.mutation_rate += 0.5
-                    mutation_probability += 0.5
-                    if self.generation_number % 500 == 0:
-                        mutation_rate += 0.5
+                    self.repeated_fitness += 1
+                    if self.mutation_probability < MUTATION_CHANCE_SPACE/2:
+                        self.mutation_probability += 1
+                    if self.generation_number % 100 == 0:
+                        self.mutation_rate += 0.5
+                    if self.repeated_fitness == 100:
+                        self.mutation_probability += 5
+                        self.mutation_rate += 2
+                        self.repeated_fitness = 0
 
             if tmp_gen[0][0] <= self.error_threshold or self.end:
                 p = tmp_gen[0]
                 self.finalize_execution(p)
                 return
 
-            make_new_polinomials(tmp_gen, self.f_data)
+            self.make_new_polinomials(tmp_gen, self.f_data)
             for f, age, p in tmp_gen:
-                generation.put((f, age, p))
+                self.generation.put((f, age, p))
             if (time.monotonic() - self.start_time >= 300):
                 print('it\'s been 5 minutes...')
                 p = tmp_gen[0]
@@ -351,99 +338,110 @@ class PolyFinder(QObject):
                 return
             self.cycles += 1
 
+    def mutate(self, poly):
+        rate = self.mutation_rate
+        # return Polinomial(random.uniform(poly[0] - rate, poly[0] + rate), random.uniform(poly[1] - rate, poly[1] + rate), random.uniform(poly[2] - rate, poly[2] + rate),
+        #                   random.uniform(poly[3] - rate, poly[3] + rate), random.uniform(poly[4] - rate, poly[4] + rate), random.uniform(poly[5] - rate, poly[5] + rate), random.uniform(poly[6] - rate, poly[6] + rate))
 
-def mutate(poly):
-    rate = mutation_rate
-    return Polinomial(random.uniform(poly[0] - rate, poly[0] + rate), random.uniform(poly[1] - rate, poly[1] + rate), random.uniform(poly[2] - rate, poly[2] + rate),
-                      random.uniform(poly[3] - rate, poly[3] + rate), random.uniform(poly[4] - rate, poly[4] + rate), random.uniform(poly[5] - rate, poly[5] + rate), random.uniform(poly[6] - rate, poly[6] + rate))
+        mutation_type = random.randint(0, 100)
+        if mutation_type > 2:
+            return Polinomial(random.uniform(poly[0] - rate, poly[0] + rate), random.uniform(poly[1] - rate, poly[1] + rate), random.uniform(poly[2] - rate, poly[2] + rate),
+                              random.uniform(poly[3] - rate, poly[3] + rate), random.uniform(poly[4] - rate, poly[4] + rate), random.uniform(poly[5] - rate, poly[5] + rate), random.uniform(poly[6] - rate, poly[6] + rate))
+        else:
+            return Polinomial(round(poly[0], 2), round(poly[1], 2), round(poly[2], 2), round(poly[3], 2), round(poly[4], 2), round(poly[5], 2), round(poly[6], 2))
 
+    def mix_genetic_material(self, *, g1, g2, i, mut):
+        # switcher = {
+        #     0: g1[i] - g2[i],
+        #     1: g1[i] + g2[i],
+        #     2: g1[i],
+        #     3: g2[i],
+        #     4: g1[i]+1,
+        #     5: g2[i]-1,
+        #     6: (g1[i] + g2[i]) / 2,
+        #     7: (g1[i] - g2[i]) / 2
+        # }
+        switch = random.getrandbits(3)  # from 0 to 7
+        # switch = 2 + random.getrandbits(1)
 
-def mix_genetic_material(*, g1, g2, i, mut):
-    switcher = {
-        0: (g1[i] - g2[i]),
-        1: (g1[i] + g2[i]),
-        2: g1[i],
-        3: g2[i],
-        4: g1[i] / 2,
-        5: g2[i] / 2,
-        6: (g1[i] + g2[i]) / 2,
-        7: (g1[i] - g2[i]) / 2
-    }
-    switch = random.getrandbits(3)  # from 0 to 7
-    return switcher.get(switch)
+        if switch == 0:
+            res = g1[i] - g2[i]
 
+        elif switch == 1:
+            res = g1[i] + g2[i]
 
-def mix(*, ind1, ind2):
-    chance_to_mutate = random.uniform(0, MUTATION_CHANCE_SPACE)
-    m = (MUTATION_CHANCE_SPACE - chance_to_mutate <= mutation_probability)
-    p = Polinomial(
-        mix_genetic_material(g1=ind1, g2=ind2, i=0, mut=m),  # x ^ 6
-        mix_genetic_material(g1=ind1, g2=ind2, i=1, mut=m),  # x ^ 5
-        mix_genetic_material(g1=ind1, g2=ind2, i=2, mut=m),  # x ^ 4
-        mix_genetic_material(g1=ind1, g2=ind2, i=3, mut=m),  # x ^ 3
-        mix_genetic_material(g1=ind1, g2=ind2, i=4, mut=m),  # x ^ 2
-        mix_genetic_material(g1=ind1, g2=ind2, i=5, mut=m),  # x ^ 1
-        mix_genetic_material(g1=ind1, g2=ind2, i=6, mut=m),  # constant
-    )
-    if m:
-        mut_ind = random.randint(0, 2)
-        if mut_ind == 0:
-            return mutate(ind1)
-        if mut_ind == 1:
-            return mutate(ind2)
-        if mut_ind == 2:
-            return mutate(p)
-    else:
-        return p
+        elif switch == 2:
+            res = g1[i]
 
+        elif switch == 3:
+            res = g2[i]
 
-def make_new_polinomials(gen, f_data):
-    for _ in range(MAX_POPULATION_SIZE * 4):
-        select1 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
+        elif switch == 4:
+            res = g1[i] + 1
 
-        select2 = select1
-        while select2 == select1:
-            select2 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
+        elif switch == 5:
+            res = g2[i] + 1
 
-        _, _, i1 = gen[select1]
-        _, _, i2 = gen[select2]
+        elif switch == 6:
+            res = (g1[i] - g2[i]) / 2
 
-        p = mix(ind1=i1, ind2=i2)
+        elif switch == 7:
+            res = (g1[i] + g2[i]) / 2
 
-        generation.put((calc_fitness(p=p, f_data=f_data), 0, p))
+        # res = switcher.get(switch)
+        if abs(res) < 1e-4:
+            return 0
+        else:
+            return round(res, 6)
 
+    def calc_fitness(self, *, p, f_data):
+        """
+        the lower the fitness, the better (the more fit it is)
+        """
+        fitness = 0
+        for point in f_data:
+            temp = polimerize(point[0], p)
+            fitness += (point[1] - temp) ** 2
+        return fitness
 
-def calc_fitness(*, p, f_data):
-    """
-    the lower the fitness, the better (the more fit it is)
-    """
+    def mix(self, *, ind1, ind2):
+        chance_to_mutate = random.uniform(0, MUTATION_CHANCE_SPACE)
+        m = (MUTATION_CHANCE_SPACE - chance_to_mutate <= self.mutation_probability)
+        p = Polinomial(
+            self.mix_genetic_material(g1=ind1, g2=ind2, i=0, mut=m),  # x ^ 6
+            self.mix_genetic_material(g1=ind1, g2=ind2, i=1, mut=m),  # x ^ 5
+            self.mix_genetic_material(g1=ind1, g2=ind2, i=2, mut=m),  # x ^ 4
+            self.mix_genetic_material(g1=ind1, g2=ind2, i=3, mut=m),  # x ^ 3
+            self.mix_genetic_material(g1=ind1, g2=ind2, i=4, mut=m),  # x ^ 2
+            self.mix_genetic_material(g1=ind1, g2=ind2, i=5, mut=m),  # x ^ 1
+            self.mix_genetic_material(
+                g1=ind1, g2=ind2, i=6, mut=m),  # constant
+        )
+        if m:
+            mut_ind = random.randint(0, 2)
+            if mut_ind == 0:
+                return self.mutate(ind1)
+            if mut_ind == 1:
+                return self.mutate(ind2)
+            if mut_ind == 2:
+                return self.mutate(p)
+        else:
+            return p
 
-    # f_x = (*(x[0] for x in f_data),)
-    # f_y = (*(x[1] for x in f_data),)
-    # f_f = (*(polimerize(x, p) for x in f_x),)
+    def make_new_polinomials(self, gen, f_data):
+        for _ in range(MAX_POPULATION_SIZE):
+            select1 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
 
-    # fitness = 0
-    # shit = False
-    # super_shit = False
-    # ultra_shit = False
-    # for i, y in enumerate(f_y):
-    #     point_diff = abs(y - f_f[i])
-    #     shit = shit or point_diff > 5
-    #     super_shit = super_shit or point_diff > 10
-    #     ultra_shit = ultra_shit or point_diff > 20
-    #     fitness += point_diff
-    #     if shit:
-    #         fitness += 10
-    #     if super_shit:
-    #         fitness += 100
-    #     if ultra_shit:
-    #         fitness += 1000
-    # return fitness
-    fitness = 0
-    for point in f_data:
-        temp = polimerize(point[0], p)
-        fitness += (point[1] - temp)**2
-    return fitness
+            select2 = select1
+            while select2 == select1:
+                select2 = random.randint(0, (MAX_POPULATION_SIZE) - 1)
+
+            _, _, i1 = gen[select1]
+            _, _, i2 = gen[select2]
+
+            p = self.mix(ind1=i1, ind2=i2)
+
+            self.generation.put((self.calc_fitness(p=p, f_data=f_data), 0, p))
 
 
 def generate_generation(*, size):
