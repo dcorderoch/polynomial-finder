@@ -54,7 +54,6 @@ class PolyFinderGUI(QMainWindow):
         self.ui.f1Btn.setDisabled(False)
         self.ui.f2Btn.setDisabled(False)
         self.ui.f3Btn.setDisabled(False)
-        self.ui.pushBtn.setDisabled(False)
         self.ui.stopBtn.setDisabled(True)
         self.resetting.emit()
 
