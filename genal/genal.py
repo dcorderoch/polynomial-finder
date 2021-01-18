@@ -12,10 +12,10 @@ Polinomial = namedtuple(
     'Polinomial', [
         'x6', 'x5', 'x4', 'x3', 'x2', 'x1', 'x0'])
 
-MAX_POPULATION_SIZE = 20
+MAX_POPULATION_SIZE = 200
 INITIAL_POPULATION_SIZE = 10
-MUTATION_THRESHOLD = 1
-ERROR_THRESHOLD = 1e-6
+MUTATION_THRESHOLD = 4
+ERROR_THRESHOLD = 0.05
 MAX_CYCLES = 1e6
 
 # 2x^6 + 2x^5 + 2x^4 + 2x^3 + 2x^2 + 2x + 7
@@ -195,6 +195,8 @@ class PolyFinder(QObject):
     generation = PriorityQueue()
     generation_number = 0
     cycles = 0
+    mutation_rate = 0.5
+    mutation_probability = MUTATION_THRESHOLD
 
     def initialize(self):
         self.generation_number = 0
@@ -206,6 +208,7 @@ class PolyFinder(QObject):
 
     def start_crunching(self):
         start_time = time.monotonic()
+        previous_fitness = 999
         while True:
             i = 0
             tmp_gen = ()
@@ -217,14 +220,28 @@ class PolyFinder(QObject):
                 i += 1
 
             if self.generation_number % 1000 == 0:
-                tg = ()
-                for p_i in range(5):
-                    tg = (*tg, tmp_gen[p_i][2])
-                # for p in tmp_gen:
-                #     self.generation.put(p)
-                # tuple with the 5 fittest polinomials
-                self.generated.emit(tg, self.generation_number)
+                # tg = ()
+                # for p_i in range(5):
+                #     tg = (*tg, tmp_gen[p_i][2])
+                # # for p in tmp_gen:
+                # #     self.generation.put(p)
+                # # tuple with the 5 fittest polinomials
+                # self.generated.emit(tg, self.generation_number)               
+                print(f"Mutation probability: {self.mutation_probability}, Mutation rate: {self.mutation_rate}")
                 print(f'most fit individual {tmp_gen[0][0]}')
+
+            if self.generation_number % 100 == 0:
+                if previous_fitness != tmp_gen[0][0]:
+                    previous_fitness = tmp_gen[0][0]
+                    self.mutation_rate = 0.5
+                    self.mutation_probability = MUTATION_THRESHOLD
+                else:
+                    # self.mutation_rate += 0.5
+                    self.mutation_probability +=1
+                    if self.generation_number % 5000 == 0:
+                        self.mutation_rate += 0.5
+
+
             self.generation_number += 1
 
             if tmp_gen[0][0] <= ERROR_THRESHOLD:
@@ -253,11 +270,11 @@ class PolyFinder(QObject):
 
     def make_new_polinomials(self, gen):
         for _ in range(int(MAX_POPULATION_SIZE / 2)):
-            select1 = random.randint(0, MAX_POPULATION_SIZE - 1)
+            select1 = random.randint(0, MAX_POPULATION_SIZE/2 - 1)
 
             select2 = select1
             while select2 == select1:
-                select2 = random.randint(0, MAX_POPULATION_SIZE - 1)
+                select2 = random.randint(0, MAX_POPULATION_SIZE/2 - 1)
 
             _, _, i1 = gen[select1]
             _, _, i2 = gen[select2]
@@ -277,8 +294,8 @@ class PolyFinder(QObject):
         return switcher.get(switch)
 
     def mix(self, *, ind1, ind2):
-        chance_to_mutate = random.uniform(0, 100000)
-        will_mutate = chance_to_mutate <= MUTATION_THRESHOLD
+        chance_to_mutate = random.uniform(0, 10000)
+        will_mutate = chance_to_mutate <= self.mutation_probability
         # if will_mutate:
         #     return self.mutate(ind1=ind1, ind2=ind2)
         # else:
@@ -302,40 +319,46 @@ class PolyFinder(QObject):
         )
 
         if will_mutate:
-            return self.mutate(p)
+            mut_ind = random.randint(0,2)
+            if mut_ind == 0:
+                return self.mutate(ind1)
+            if mut_ind == 1:
+                return self.mutate(ind2)
+            if mut_ind == 2:
+                return self.mutate(p)
         else:
             return p
 
     def mutate(self, poly):
-        mutated_part = random.getrandbits(3)  # from 0 to 7
+        # mutated_part = random.getrandbits(3)  # from 0 to 7
         # p = Polinomial()
         # i = 0
-        if mutated_part == 0:
-            p = Polinomial(poly[0], poly[1], poly[2],
-                           poly[3], poly[4], poly[5], poly[6] * -1)
-        if mutated_part == 1:
-            p = Polinomial(poly[0], poly[1], poly[2],
-                           poly[3], poly[4], poly[5] * -1, poly[6])
+        rate = self.mutation_rate
+        p = Polinomial(random.uniform(poly[0] - rate, poly[0] + rate), random.uniform(poly[1] - rate, poly[1] + rate), random.uniform(poly[2] - rate, poly[2] + rate),
+                       random.uniform(poly[3] - rate, poly[3] + rate), random.uniform(poly[4] - rate, poly[4] + rate), random.uniform(poly[5] - rate, poly[5] + rate), random.uniform(poly[6] - rate, poly[6] + rate))
+        # if mutated_part == 1:
+        #     p = Polinomial(poly[0], poly[1], poly[2],
+        #                    poly[3], poly[4], poly[5] * -1, poly[6])
 
-        if mutated_part == 2:
-            p = Polinomial(poly[0], poly[1], poly[2],
-                           poly[3], poly[4] * -1, poly[5], poly[6])
-        if mutated_part == 3:
-            p = Polinomial(poly[0], poly[1], poly[2], poly[3]
-                           * -1, poly[4], poly[5], poly[6])
-        if mutated_part == 4:
-            p = Polinomial(poly[0], poly[1], poly[2] * -1,
-                           poly[3], poly[4], poly[5], poly[6])
-        if mutated_part == 5:
-            p = Polinomial(poly[0], poly[1] * -1, poly[2],
-                           poly[3], poly[4], poly[5], poly[6])
-        if mutated_part == 6:
-            p = Polinomial(poly[0] * -1, poly[1], poly[2],
-                           poly[3], poly[4], poly[5], poly[6])
+        # if mutated_part == 2:
+        #     p = Polinomial(poly[0], poly[1], poly[2],
+        #                    poly[3], poly[4] * -1, poly[5], poly[6])
+        # if mutated_part == 3:
+        #     p = Polinomial(poly[0], poly[1], poly[2], poly[3]
+        #                    * -1, poly[4], poly[5], poly[6])
+        # if mutated_part == 4:
+        #     p = Polinomial(poly[0], poly[1], poly[2] * -1,
+        #                    poly[3], poly[4], poly[5], poly[6])
+        # if mutated_part == 5:
+        #     p = Polinomial(poly[0], poly[1] * -1, poly[2],
+        #                    poly[3], poly[4], poly[5], poly[6])
+        # if mutated_part == 6:
+        #     p = Polinomial(poly[0] * -1, poly[1], poly[2],
+        #                    poly[3], poly[4], poly[5], poly[6])
 
-        if mutated_part == 7:
-            p = Polinomial(poly[0] * -1, poly[1] * -1, poly[2] * -1,
-                           poly[3] * -1, poly[4] * -1, poly[5] * -1, poly[6] * -1)
+        # if mutated_part == 7:
+        #     p = Polinomial(poly[0] * -1, poly[1] * -1, poly[2] * -1,
+        #                    poly[3] * -1, poly[4] * -1, poly[5] * -1, poly[6] * -1)
 
         # if mutated_part < 7:
         #     for f in poly:
@@ -375,8 +398,8 @@ class PolyFinder(QObject):
             tmp += p.x2 * (point[0] ** 2)
             tmp += p.x1 * (point[0] ** 1)
             tmp += p.x0  # constant, so no multiplication required
-            fitness += abs(tmp - point[1])
-        return fitness/len(data)
+            fitness += (tmp - point[1])**2
+        return fitness
 
     def generate_first_generation(self, *, size):
         # gen = ()
