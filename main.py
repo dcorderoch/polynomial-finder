@@ -128,13 +128,14 @@ class PolyFinderGUI(QMainWindow):
         colors = ('#0000CC', '#0088FF', '#00CC00', '#CC8800', '#FF0000')
 
         for i, p in enumerate(Polinomials):
-            ys = ()
-            for x in f_x:
-                y = 0
-                for j, coeff in enumerate(p):
-                    y += coeff * x ** j
-                ys = (*ys, y)
-            plt.plot(f_x, ys, color=colors[i], label=f'rank {i+1}')
+            # ys = ()
+            f_f = (*(genal.polimerize(x, p) for x in f_x),)
+            # for x in f_x:
+            #     y = 0
+            #     for j, coeff in enumerate(p):
+            #         y += coeff * x ** j
+            #     ys = (*ys, genal.polimerize())
+            plt.plot(f_x, f_f, color=colors[i], label=f'rank {i+1}')
 
         image_path = f'generation.png'
 

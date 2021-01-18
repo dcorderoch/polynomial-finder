@@ -343,8 +343,8 @@ def mix_genetic_material(*, g1, g2, i, mut):
     switcher = {
         0: (g1[i] - g2[i]),
         1: (g1[i] + g2[i]),
-        2: -g1[i],
-        3: -g2[i],
+        2: g1[i],
+        3: g2[i],
         4: g1[i] / 2,
         5: g2[i] / 2,
         6: (g1[i] + g2[i]) / 2,
