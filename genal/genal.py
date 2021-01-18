@@ -11,7 +11,7 @@ Polinomial = namedtuple(
     'Polinomial', [
         'x6', 'x5', 'x4', 'x3', 'x2', 'x1', 'x0'])
 
-MAX_POPULATION_SIZE = 100
+MAX_POPULATION_SIZE = 50
 INITIAL_POPULATION_SIZE = 10
 MUTATION_THRESHOLD = 0.5
 MUTATION_CHANCE_SPACE = 100
@@ -272,6 +272,13 @@ class PolyFinder(QObject):
                 else:
                     generation.get()
                 i += 1
+            if len(tmp_gen) == 0:
+                gen0 = generate_generation(size=MAX_POPULATION_SIZE)
+                for i in gen0:
+                    generation.put(
+                        (calc_fitness(p=i, f_data=self.f_data), 0, i))
+                while not generation.empty():
+                    tmp_gen = (*tmp_gen, generation.get())
 
             if self.generation_number % 10 == 0:
                 if self.generation_number % 100 == 0:
@@ -293,7 +300,8 @@ class PolyFinder(QObject):
                 return
             self.generation_number += 1
 
-            if tmp_gen[0][0] <= self.error_threshold or self.end:
+            if len(
+                    tmp_gen) > 0 and tmp_gen[0][0] <= self.error_threshold or self.end:
                 p = tmp_gen[0]
                 tg = ()
                 for p_i in range(5):
@@ -306,6 +314,7 @@ class PolyFinder(QObject):
             make_new_polinomials(tmp_gen, self.f_data)
             for f, age, p in tmp_gen:
                 generation.put((f, age, p))
+
             if (time.monotonic() - self.start_time >= 300):
                 print('it\'s been 5 minutes...')
                 p = tmp_gen[0]
