@@ -42,6 +42,7 @@ class PolyFinderGUI(QMainWindow):
         self.ui.f1Btn.setDisabled(True)
         self.ui.f2Btn.setDisabled(True)
         self.ui.f3Btn.setDisabled(True)
+        self.ui.stopBtn.setDisabled(True)
         self.function = index
 
     def enable_stop(self):
@@ -53,7 +54,6 @@ class PolyFinderGUI(QMainWindow):
         self.ui.f1Btn.setDisabled(False)
         self.ui.f2Btn.setDisabled(False)
         self.ui.f3Btn.setDisabled(False)
-        self.ui.stopBtn.setDisabled(True)
         self.resetting.emit()
 
     def __init__(self):
@@ -85,8 +85,6 @@ class PolyFinderGUI(QMainWindow):
         self.ui.rstBtn.clicked.connect(self.reset)
         self.ui.rstBtn.clicked.connect(
             lambda: self.ui.rstBtn.setDisabled(True))
-        self.ui.rstBtn.clicked.connect(
-            lambda: self.ui.quitBtn.setDisabled(True))
         self.ui.quitBtn.clicked.connect(lambda: QApplication.quit())
         self.resetting.connect(self.worker.reset)
         self.updated.connect(self.worker.start_crunching)
