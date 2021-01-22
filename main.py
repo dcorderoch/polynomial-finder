@@ -15,19 +15,6 @@ import matplotlib.pyplot as plt
 import os
 import sys
 
-"""
-steps:
-    start a generation
-    calculate population's fitness
-    select mating pool
-    do crossover
-    check if going to mutate
-    do mutation
-    kill the weak ones
-    check the fitness against confidence level/error
-    if candidate is a chad, or too many generations, finish
-"""
-
 
 class PolyFinderGUI(QMainWindow):
     updated = pyqtSignal()
@@ -38,7 +25,6 @@ class PolyFinderGUI(QMainWindow):
     def enable_start_btn(self, index):
         self.ui.pushBtn.setDisabled(False)
         self.worker.set_data(index)
-        self.ui.f0Btn.setDisabled(True)
         self.ui.f1Btn.setDisabled(True)
         self.ui.f2Btn.setDisabled(True)
         self.ui.f3Btn.setDisabled(True)
@@ -49,12 +35,21 @@ class PolyFinderGUI(QMainWindow):
         self.ui.stopBtn.setDisabled(False)
 
     def reset(self):
-        self.ui.f0Btn.setDisabled(False)
         self.ui.f1Btn.setDisabled(False)
         self.ui.f2Btn.setDisabled(False)
         self.ui.f3Btn.setDisabled(False)
         self.ui.stopBtn.setDisabled(True)
         self.resetting.emit()
+
+    def on_stop_btn(self):
+        self.ui.stopBtn.setDisabled(True)
+        self.ui.rstBtn.setDisabled(False)
+        self.ui.quitBtn.setDisabled(False)
+
+    def on_rst_btn(self):
+        self.reset()
+        self.ui.rstBtn.setDisabled(True)
+        self.ui.quitBtn.setDisabled(True)
 
     def __init__(self):
         super().__init__()
@@ -72,21 +67,11 @@ class PolyFinderGUI(QMainWindow):
         self.ui.pushBtn.clicked.connect(self.worker.initialize)
         self.ui.pushBtn.clicked.connect(self.enable_stop)
         self.ui.stopBtn.clicked.connect(self.worker.finish)
-        self.ui.stopBtn.clicked.connect(
-            lambda: self.ui.stopBtn.setDisabled(True))
-        self.ui.stopBtn.clicked.connect(
-            lambda: self.ui.rstBtn.setDisabled(False))
-        self.ui.stopBtn.clicked.connect(
-            lambda: self.ui.quitBtn.setDisabled(False))
-        self.ui.f0Btn.clicked.connect(lambda: self.enable_start_btn(0))
+        self.ui.stopBtn.clicked.connect(lambda: self.on_stop_btn())
         self.ui.f1Btn.clicked.connect(lambda: self.enable_start_btn(1))
         self.ui.f2Btn.clicked.connect(lambda: self.enable_start_btn(2))
         self.ui.f3Btn.clicked.connect(lambda: self.enable_start_btn(3))
-        self.ui.rstBtn.clicked.connect(self.reset)
-        self.ui.rstBtn.clicked.connect(
-            lambda: self.ui.rstBtn.setDisabled(True))
-        self.ui.rstBtn.clicked.connect(
-            lambda: self.ui.quitBtn.setDisabled(True))
+        self.ui.rstBtn.clicked.connect(lambda: self.on_rst_btn())
         self.ui.quitBtn.clicked.connect(lambda: QApplication.quit())
         self.resetting.connect(self.worker.reset)
         self.updated.connect(self.worker.start_crunching)
@@ -105,35 +90,16 @@ class PolyFinderGUI(QMainWindow):
         """
         Polinomials is a tuple of 5 p polinomials, and each p the coefficients of the polinomial
         """
-        lowest = 1000
-        highest = -1000
 
         f_x = (*(x[0] for x in f_data),)
         f_y = (*(x[1] for x in f_data),)
-
-        for x in f_x:
-            if x < lowest:
-                lowest = x
-            if x > highest:
-                highest = x
-
-        x_start = lowest  # change this, use the smallest X in the data
-        x_end = highest  # change this, use the biggest X in the data
-        slices = len(f_x)  # smooth the curve
-        x = linspace(x_start, x_end, slices)
 
         plt.plot(f_x, f_y, color='black')
 
         colors = ('#0000CC', '#0088FF', '#00CC00', '#CC8800', '#FF0000')
 
         for i, p in enumerate(Polinomials):
-            # ys = ()
             f_f = (*(genal.polimerize(x, p) for x in f_x),)
-            # for x in f_x:
-            #     y = 0
-            #     for j, coeff in enumerate(p):
-            #         y += coeff * x ** j
-            #     ys = (*ys, genal.polimerize())
             plt.plot(f_x, f_f, color=colors[i], label=f'rank {i+1}')
 
         image_path = f'generation.png'

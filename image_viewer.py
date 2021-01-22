@@ -35,10 +35,6 @@ class Ui_Dialog(object):
         self.rstBtn.setObjectName("rstBtn")
         self.rstBtn.setDisabled(True)
 
-        self.f0Btn = QtWidgets.QPushButton(Dialog)
-        self.f0Btn.setGeometry(QtCore.QRect(295, 40, 75, 23))
-        self.f0Btn.setObjectName("f0Btn")
-
         self.f1Btn = QtWidgets.QPushButton(Dialog)
         self.f1Btn.setGeometry(QtCore.QRect(370, 40, 75, 23))
         self.f1Btn.setObjectName("f1Btn")
@@ -59,7 +55,6 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Image Viewer"))
         self.pushBtn.setText(_translate("Dialog", "start"))
         self.stopBtn.setText(_translate("Dialog", "stop"))
-        self.f0Btn.setText(_translate("Dialog", "f0"))
         self.f1Btn.setText(_translate("Dialog", "f1"))
         self.f2Btn.setText(_translate("Dialog", "f2"))
         self.f3Btn.setText(_translate("Dialog", "f3"))
