@@ -89,10 +89,6 @@ class PolyFinderGUI(QMainWindow):
         return y
 
     def update_graph(self, Polinomials, f_data, generation):
-        """
-        Polinomials is a tuple of 5 p polinomials, and each p the coefficients of the polinomial
-        """
-
         f_x = (*(x[0] for x in f_data),)
         f_y = (*(x[1] for x in f_data),)
 
@@ -102,7 +98,7 @@ class PolyFinderGUI(QMainWindow):
 
         for i, p in enumerate(Polinomials):
             f_f = (*(genal.polimerize(x, p) for x in f_x),)
-            plt.plot(f_x, f_f, color=colors[i], label=f'rank {i+1}')
+            plt.plot(f_x, f_f, label=f'rank {i+1}')
 
         plt.title(f'function: {self.function} - generation: {generation}')
         plt.legend()
@@ -120,7 +116,7 @@ class PolyFinderGUI(QMainWindow):
 
         self.sceneRef.deleteLater()
         self.sceneRef = scene
-        QTimer.singleShot(0, lambda: self.updated.emit())
+        self.updated.emit()
 
 
 if __name__ == '__main__':
