@@ -4,7 +4,7 @@ from image_viewer import *
 
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 from PyQt5.QtWidgets import QApplication, QDialog, QGraphicsScene, QGraphicsPixmapItem
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QImage
 
 from PyQt5.QtWidgets import QMainWindow
 
@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 import os
 import sys
+import io
 
 
 class PolyFinderGUI(QMainWindow):
@@ -64,6 +65,7 @@ class PolyFinderGUI(QMainWindow):
 
         self.worker.generated.connect(self.update_graph)
         self.worker.initialized.connect(self.worker.start_crunching)
+        self.worker.finished.connect(lambda: self.on_stop_btn())
         self.ui.pushBtn.clicked.connect(self.worker.initialize)
         self.ui.pushBtn.clicked.connect(self.enable_stop)
         self.ui.stopBtn.clicked.connect(self.worker.finish)
@@ -102,19 +104,20 @@ class PolyFinderGUI(QMainWindow):
             f_f = (*(genal.polimerize(x, p) for x in f_x),)
             plt.plot(f_x, f_f, color=colors[i], label=f'rank {i+1}')
 
-        image_path = f'generation.png'
-
         plt.title(f'function: {self.function} - generation: {generation}')
         plt.legend()
 
-        plt.savefig(image_path)
+        buf = io.BytesIO()
+        plt.savefig(buf)
         plt.clf()
-
         scene = QGraphicsScene(self)
-        pixmap = QPixmap(image_path)
-        item = QGraphicsPixmapItem(pixmap)
+        item = QGraphicsPixmapItem(
+            QPixmap.fromImage(
+                QImage.fromData(
+                    buf.getbuffer())))
         scene.addItem(item)
         self.ui.graphicsView.setScene(scene)
+
         self.sceneRef.deleteLater()
         self.sceneRef = scene
         QTimer.singleShot(0, lambda: self.updated.emit())

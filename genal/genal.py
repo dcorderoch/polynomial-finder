@@ -13,7 +13,7 @@ Polinomial = namedtuple(
     'Polinomial', [
         'x6', 'x5', 'x4', 'x3', 'x2', 'x1', 'x0'])
 
-MAX_POPULATION_SIZE = 40
+MAX_POPULATION_SIZE = 20
 INITIAL_POPULATION_SIZE = 10
 MUTATION_THRESHOLD = 1
 MUTATION_CHANCE_SPACE = 100
@@ -193,13 +193,14 @@ def polimerize(x, coeffs):
 class PolyFinder(QObject):
     generated = pyqtSignal(tuple, tuple, int)
     initialized = pyqtSignal()
+    finished = pyqtSignal()
 
     def __init__(self):
         super().__init__()
 
         self.f_data = ()
+        self.looking_for_function = -1
         self.end = False
-        self.finalized = False
         self.generation_number = 0
         self.previous_fitness = 999
         self.repeated_fitness = 0
@@ -211,11 +212,14 @@ class PolyFinder(QObject):
         self.stuck_checker = 0
 
     def reset(self):
+        self.looking_for_function = -1
         self.generation_number = 0
         while not self.generation.empty():
             self.generation.get()
+            self.generation.task_done()
         self.end = False
-        self.finalized = False
+        self.mutation_rate = MUTATION_RATE
+        self.mutation_probability = MUTATION_THRESHOLD
 
     def set_data(self, index):
         switcher = {
@@ -224,6 +228,7 @@ class PolyFinder(QObject):
             3: f3_data
         }
         self.f_data = switcher.get(index)
+        self.looking_for_function = index
 
     def initialize(self):
         self.generation_number = 0
@@ -238,8 +243,9 @@ class PolyFinder(QObject):
         self.end = True
 
     def finalize_execution(self, p):
-        if not self.finalized:
+        if not self.end:
             print(f'found almost perfect individual')
+        print(f'looking for function:{self.looking_for_function}')
         print(f'fitness:{p[0]}')
         print(f'generation_number:{self.generation_number}')
         print(f'self.mutation_probability:{self.mutation_probability}')
@@ -262,7 +268,7 @@ class PolyFinder(QObject):
         print(f'{p[2].x1}x + ', end='')
         print(f'{p[2].x0}')
         print(f'END')
-        self.finalized = True
+        self.finished.emit()
 
     def get_the_a_team(self, gen):
         tg = ()
@@ -282,7 +288,9 @@ class PolyFinder(QObject):
                 self.generation.task_done()
                 i += 1
 
-            if self.generation_number % 25 == 0:
+            fifty_gens = self.generation_number % 50 == 0
+
+            if fifty_gens:
                 for p in tmp_gen:
                     self.generation.put(p)
                 tg = self.get_the_a_team(tmp_gen)
@@ -303,26 +311,25 @@ class PolyFinder(QObject):
             if not self.stuck and (self.previous_fitness - fittest) * 100 <= 5:
                 self.stuck_checker += 1
 
-            if self.generation_number % 10 == 0:
-                if self.previous_fitness != fittest:
-                    self.previous_fitness = fittest
-                    self.mutation_rate = MUTATION_RATE
-                    self.mutation_probability = MUTATION_THRESHOLD
-                else:
-                    if self.mutation_probability < MUTATION_CHANCE_SPACE / 2:
-                        self.mutation_probability += 1
-                    if self.generation_number % 100 == 0:
-                        self.mutation_rate += 0.5
-                    if self.repeated_fitness == 100:
-                        self.mutation_probability += 5
-                        self.mutation_rate += 2
-                        self.repeated_fitness = 0
-                    self.repeated_fitness += 1
+            if self.previous_fitness != fittest:
+                self.previous_fitness = fittest
+                self.mutation_rate = MUTATION_RATE
+                self.mutation_probability = MUTATION_THRESHOLD
+            else:
+                if self.mutation_probability < MUTATION_CHANCE_SPACE / 2:
+                    self.mutation_probability += 1
+                if fifty_gens:
+                    self.mutation_rate += 0.01
+                if self.repeated_fitness == 10:
+                    self.mutation_probability += 5
+                    self.mutation_rate += 0.1
+                    self.repeated_fitness = 0
+                self.repeated_fitness += 1
 
             if fittest <= ERROR_THRESHOLD:
                 tg = self.get_the_a_team(tmp_gen)
                 self.generated.emit(tg, self.f_data, self.generation_number)
-                self.end = True
+                self.finish()
                 self.finalize_execution(tmp_gen[0])
                 return
 
@@ -331,15 +338,16 @@ class PolyFinder(QObject):
                 self.generation.put(p)
             time_so_far = time.monotonic() - self.start_time
             if time_so_far >= 300:
-                self.end = True
+                self.finish()
                 print(f'it\'s been :{time_so_far} (s)')
                 tg = self.get_the_a_team(tmp_gen)
                 self.generated.emit(tg, self.f_data, self.generation_number)
+                self.finish()
                 self.finalize_execution(tmp_gen[0])
                 return
         if self.end:
             return
-        self.end = True
+        self.finish()
         tmp_gen = ()
         i = 0
         while not self.generation.empty() and i < 5:
@@ -368,8 +376,15 @@ class PolyFinder(QObject):
                 random.uniform(p[6] - rate, p[6] + rate)
             )
         else:
-            return Polinomial(round(p[0], 2), round(p[1], 2), round(p[2], 2), round(
-                p[3], 2), round(p[4], 2), round(p[5], 2), round(p[6], 2))
+            return Polinomial(
+                round(p[0], 2),
+                round(p[1], 2),
+                round(p[2], 2),
+                round(p[3], 2),
+                round(p[4], 2),
+                round(p[5], 2),
+                round(p[6], 2)
+            )
 
     def mix_genetic_material(self, *, g1, g2, i):
         switcher = {
@@ -385,10 +400,7 @@ class PolyFinder(QObject):
         switch = random.getrandbits(3)  # from 0 to 7
         res = switcher.get(switch)
 
-        if abs(res) < 1e-4:
-            return 0
-        else:
-            return round(res, 6)
+        return 0 if abs(res) < 1e-4 else round(res, 6)
 
     def calc_fitness(self, *, p, f_data):
         """
@@ -401,10 +413,10 @@ class PolyFinder(QObject):
         return fitness
 
     def mix(self, *, ind1, ind2):
-        chance_to_mutate = random.uniform(0, MUTATION_CHANCE_SPACE)
-        m = (
-            MUTATION_CHANCE_SPACE -
-            chance_to_mutate <= self.mutation_probability)
+        #chance_to_mutate = random.uniform(0, MUTATION_CHANCE_SPACE)
+        # m = (
+        #    MUTATION_CHANCE_SPACE -
+        #    chance_to_mutate <= self.mutation_probability)
         p = Polinomial(
             self.mix_genetic_material(g1=ind1, g2=ind2, i=0),  # x ^ 6
             self.mix_genetic_material(g1=ind1, g2=ind2, i=1),  # x ^ 5
@@ -414,15 +426,19 @@ class PolyFinder(QObject):
             self.mix_genetic_material(g1=ind1, g2=ind2, i=5),  # x ^ 1
             self.mix_genetic_material(g1=ind1, g2=ind2, i=6),  # x ^ 0
         )
-        if m:
-            switcher = {
-                0: self.mutate(ind1),
-                1: self.mutate(ind2),
-                2: self.mutate(p)
-            }
-            return switcher.get(random.randint(0, 2))
-        else:
-            return p
+        # if m:
+        self.generation.put(
+            (self.calc_fitness(
+                p=self.mutate(p),
+                f_data=self.f_data),
+                0,
+                p))
+        p1 = self.mutate(ind1)
+        self.generation.put(
+            (self.calc_fitness(p=p1, f_data=self.f_data), 0, p1))
+        p2 = self.mutate(ind1)
+        self.generation.put(
+            (self.calc_fitness(p=p2, f_data=self.f_data), 0, p2))
 
     def make_new_polinomials(self, gen, f_data):
         if self.stuck:
@@ -434,6 +450,7 @@ class PolyFinder(QObject):
                     (self.calc_fitness(p=i, f_data=self.f_data), 0, i))
             while not self.generation.empty():
                 gen = (*gen, self.generation.get())
+                self.generation.task_done()
             for i in range(MAX_POPULATION_SIZE):
                 for j in range(50):
                     _, _, s = gen[i % 4]
@@ -463,10 +480,7 @@ class PolyFinder(QObject):
                 _, _, i1 = gen[select1]
                 _, _, i2 = gen[select2]
 
-                p = self.mix(ind1=i1, ind2=i2)
-
-                self.generation.put(
-                    (self.calc_fitness(p=p, f_data=f_data), 0, p))
+                self.mix(ind1=i1, ind2=i2)
 
 
 def generate_generation(*, size):
@@ -474,13 +488,13 @@ def generate_generation(*, size):
     for i in range(size):
         gen = (*gen,
                Polinomial(
-                   random.uniform(-1.0, 1.0),  # x ^ 6
-                   random.uniform(-1.0, 1.0),  # x ^ 5
-                   random.uniform(-1.0, 1.0),  # x ^ 4
-                   random.uniform(-1.0, 1.0),  # x ^ 3
-                   random.uniform(-1.0, 1.0),  # x ^ 2
-                   random.uniform(-1.0, 1.0),  # x ^ 1
-                   random.uniform(-1.0, 1.0)   # x ^ 0
+                   random.uniform(900, 1000),  # x ^ 6
+                   random.uniform(900, 1000),  # x ^ 5
+                   random.uniform(900, 1000),  # x ^ 4
+                   random.uniform(900, 1000),  # x ^ 3
+                   random.uniform(900, 1000),  # x ^ 2
+                   random.uniform(900, 1000),  # x ^ 1
+                   random.uniform(900, 1000)   # x ^ 0
                )
                )
     return gen
