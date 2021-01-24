@@ -7,21 +7,18 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
     QGraphicsPixmapItem,
     QGridLayout,
+    QMainWindow,
     QPushButton,
     QWidget
 )
 from PyQt5.QtGui import QPixmap, QImage
 
-from PyQt5.QtWidgets import QMainWindow
-
-from numpy import linspace, sin, cos  # gotta change this
 import math  # for the pi thing
 
 import os
 import sys
 import io
 
-import numpy as np
 import pyqtgraph as pg
 
 pg.setConfigOption('background', 'w')
@@ -52,8 +49,6 @@ class PolyFinderGUI(QMainWindow):
         self.worker_thread.start()
 
         self.make_signal_connections()
-
-        #self.sceneRef = QObject()
 
         self.widget = QWidget()
         self.plot_widget = pg.PlotWidget()
@@ -110,19 +105,19 @@ class PolyFinderGUI(QMainWindow):
 
     def setup_ui(self):
         self.startBtn.setText("start")
-        self.startBtn.setMinimumWidth(75)
+        self.startBtn.setMinimumWidth(100)
         self.stopBtn.setText("stop")
-        self.stopBtn.setMinimumWidth(75)
+        self.stopBtn.setMinimumWidth(100)
         self.quitBtn.setText("quit")
-        self.quitBtn.setMinimumWidth(75)
+        self.quitBtn.setMinimumWidth(100)
         self.rstBtn.setText("reset")
-        self.rstBtn.setMinimumWidth(75)
+        self.rstBtn.setMinimumWidth(100)
         self.f1Btn.setText("f1")
-        self.f1Btn.setMinimumWidth(75)
+        self.f1Btn.setMinimumWidth(100)
         self.f2Btn.setText("f2")
-        self.f2Btn.setMinimumWidth(75)
+        self.f2Btn.setMinimumWidth(100)
         self.f3Btn.setText("f3")
-        self.f3Btn.setMinimumWidth(75)
+        self.f3Btn.setMinimumWidth(100)
 
         self.startBtn.setDisabled(True)
         self.stopBtn.setDisabled(True)
