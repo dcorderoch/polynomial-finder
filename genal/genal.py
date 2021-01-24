@@ -272,7 +272,7 @@ class PolyFinder(QObject):
 
     def get_the_a_team(self, gen):
         tg = ()
-        for i in range(min(5, len(gen))):
+        for i in range(5):
             p = gen[i][2]
             tg = (*tg, p)
         return tg
