@@ -203,6 +203,8 @@ def polimerize(x, coeffs):
 class PolyFinder(QObject):
     generated = pyqtSignal(tuple, tuple, int)
     initialized = pyqtSignal()
+    finished = pyqtSignal(tuple)
+
     f_data = ()
     error_threshold = 0
     end = False
@@ -217,8 +219,6 @@ class PolyFinder(QObject):
     mutation_rate = MUTATION_RATE
     mutation_probability = MUTATION_THRESHOLD
 
-    start_time = time.monotonic()
-
     def reset(self):
         self.generation_number = 0
         self.cycles = 0
@@ -226,6 +226,7 @@ class PolyFinder(QObject):
         while not self.generation.empty():
             self.generation.get()
         self.end = False
+        self.start_time = time.monotonic()
 
     def set_data(self, index):
         switcher = {
@@ -244,6 +245,7 @@ class PolyFinder(QObject):
         for i in gen0:
             self.generation.put(
                 (self.calc_fitness(p=i, f_data=self.f_data), 0, i))
+        self.start_time = time.monotonic()
         self.initialized.emit()
 
     def finish(self):
@@ -256,8 +258,13 @@ class PolyFinder(QObject):
         f_x = (*(x[0] for x in self.f_data),)
         f_y = (*(x[1] for x in self.f_data),)
         f_f = (*(polimerize(x, p[2]) for x in f_x),)
-        for i, _ in enumerate(f_y):
-            print(f'p{i}:{f_f[i]} vs {f_y[i]}')
+        cummulative_error = 0
+        for i, y in enumerate(f_y):
+            print(f'p{i}:{f_f[i]} vs {f_y[i]}', end='')
+            error = abs(100 * abs(y - f_f[i]) / y)
+            print(f' | error:{error:04f}%')
+            cummulative_error += error
+        print(f'avg error: {cummulative_error / len(f_y)}%')
         print(f'p(x): ', end='')
         print(f'{p[2].x6}x^6 +', end='')
         print(f'{p[2].x5}x^5 + ', end='')
@@ -266,7 +273,8 @@ class PolyFinder(QObject):
         print(f'{p[2].x2}x^2 + ', end='')
         print(f'{p[2].x1}x + ', end='')
         print(f'{p[2].x0}')
-        print(f'END')
+        print(f'END\n')
+        self.finished.emit(p[2])
 
     def start_crunching(self):
         while True:
@@ -279,14 +287,7 @@ class PolyFinder(QObject):
                     self.generation.get()
                 i += 1
 
-            if self.generation_number % 50 == 0:
-                if self.generation_number % 100 == 0:
-                    print(f'tmp_gen[0]:{tmp_gen[0]}')
-                    print(f'tmp_gen[1]:{tmp_gen[1]}')
-                    print(f'tmp_gen[2]:{tmp_gen[2]}')
-                    print(f'tmp_gen[3]:{tmp_gen[3]}')
-                    print(f'tmp_gen[4]:{tmp_gen[4]}')
-                    print(f'')
+            if self.generation_number % 10 == 0:
                 tg = ()
                 for p_i in range(5):
                     p = tmp_gen[p_i][2]
@@ -308,7 +309,7 @@ class PolyFinder(QObject):
                 else:
                     # self.mutation_rate += 0.5
                     self.repeated_fitness += 1
-                    if self.mutation_probability < MUTATION_CHANCE_SPACE/2:
+                    if self.mutation_probability < MUTATION_CHANCE_SPACE / 2:
                         self.mutation_probability += 1
                     if self.generation_number % 100 == 0:
                         self.mutation_rate += 0.5
@@ -341,14 +342,18 @@ class PolyFinder(QObject):
     def mutate(self, poly):
         rate = self.mutation_rate
         # return Polinomial(random.uniform(poly[0] - rate, poly[0] + rate), random.uniform(poly[1] - rate, poly[1] + rate), random.uniform(poly[2] - rate, poly[2] + rate),
-        #                   random.uniform(poly[3] - rate, poly[3] + rate), random.uniform(poly[4] - rate, poly[4] + rate), random.uniform(poly[5] - rate, poly[5] + rate), random.uniform(poly[6] - rate, poly[6] + rate))
+        # random.uniform(poly[3] - rate, poly[3] + rate),
+        # random.uniform(poly[4] - rate, poly[4] + rate),
+        # random.uniform(poly[5] - rate, poly[5] + rate),
+        # random.uniform(poly[6] - rate, poly[6] + rate))
 
         mutation_type = random.randint(0, 100)
         if mutation_type > 2:
             return Polinomial(random.uniform(poly[0] - rate, poly[0] + rate), random.uniform(poly[1] - rate, poly[1] + rate), random.uniform(poly[2] - rate, poly[2] + rate),
                               random.uniform(poly[3] - rate, poly[3] + rate), random.uniform(poly[4] - rate, poly[4] + rate), random.uniform(poly[5] - rate, poly[5] + rate), random.uniform(poly[6] - rate, poly[6] + rate))
         else:
-            return Polinomial(round(poly[0], 2), round(poly[1], 2), round(poly[2], 2), round(poly[3], 2), round(poly[4], 2), round(poly[5], 2), round(poly[6], 2))
+            return Polinomial(round(poly[0], 2), round(poly[1], 2), round(poly[2], 2), round(
+                poly[3], 2), round(poly[4], 2), round(poly[5], 2), round(poly[6], 2))
 
     def mix_genetic_material(self, *, g1, g2, i, mut):
         # switcher = {
@@ -406,7 +411,9 @@ class PolyFinder(QObject):
 
     def mix(self, *, ind1, ind2):
         chance_to_mutate = random.uniform(0, MUTATION_CHANCE_SPACE)
-        m = (MUTATION_CHANCE_SPACE - chance_to_mutate <= self.mutation_probability)
+        m = (
+            MUTATION_CHANCE_SPACE -
+            chance_to_mutate <= self.mutation_probability)
         p = Polinomial(
             self.mix_genetic_material(g1=ind1, g2=ind2, i=0, mut=m),  # x ^ 6
             self.mix_genetic_material(g1=ind1, g2=ind2, i=1, mut=m),  # x ^ 5
