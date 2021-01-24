@@ -51,20 +51,7 @@ class PolyFinderGUI(QMainWindow):
         self.worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
 
-        self.worker.generated.connect(self.update_graph)
-        self.worker.initialized.connect(self.worker.start_crunching)
-        self.worker.finished.connect(lambda: self.on_stop_btn())
-        self.startBtn.clicked.connect(self.worker.initialize)
-        self.startBtn.clicked.connect(self.enable_stop)
-        self.stopBtn.clicked.connect(self.worker.finish)
-        self.stopBtn.clicked.connect(lambda: self.on_stop_btn())
-        self.f1Btn.clicked.connect(lambda: self.enable_start_btn(1))
-        self.f2Btn.clicked.connect(lambda: self.enable_start_btn(2))
-        self.f3Btn.clicked.connect(lambda: self.enable_start_btn(3))
-        self.rstBtn.clicked.connect(lambda: self.on_rst_btn())
-        self.quitBtn.clicked.connect(lambda: QApplication.quit())
-        self.resetting.connect(self.worker.reset)
-        self.updated.connect(self.worker.start_crunching)
+        self.make_signal_connections()
 
         #self.sceneRef = QObject()
 
@@ -104,6 +91,22 @@ class PolyFinderGUI(QMainWindow):
         self.setCentralWidget(self.widget)
 
         self.show()
+
+    def make_signal_connections(self):
+        self.worker.generated.connect(self.update_graph)
+        self.worker.initialized.connect(self.worker.start_crunching)
+        self.worker.finished.connect(lambda: self.on_stop_btn())
+        self.startBtn.clicked.connect(self.worker.initialize)
+        self.startBtn.clicked.connect(self.enable_stop)
+        self.stopBtn.clicked.connect(self.worker.finish)
+        self.stopBtn.clicked.connect(lambda: self.on_stop_btn())
+        self.f1Btn.clicked.connect(lambda: self.enable_start_btn(1))
+        self.f2Btn.clicked.connect(lambda: self.enable_start_btn(2))
+        self.f3Btn.clicked.connect(lambda: self.enable_start_btn(3))
+        self.rstBtn.clicked.connect(lambda: self.on_rst_btn())
+        self.quitBtn.clicked.connect(lambda: QApplication.quit())
+        self.resetting.connect(self.worker.reset)
+        self.updated.connect(self.worker.start_crunching)
 
     def setup_ui(self):
         self.startBtn.setText("start")
