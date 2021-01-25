@@ -327,39 +327,67 @@ class PolyFinder(QObject):
                 return
             self.cycles += 1
 
-    def mutate(self, poly):
+    def mutate(self, poly, g1, g2):
         rate = self.mutation_rate
         # return Polinomial(random.uniform(poly[0] - rate, poly[0] + rate), random.uniform(poly[1] - rate, poly[1] + rate), random.uniform(poly[2] - rate, poly[2] + rate),
         # random.uniform(poly[3] - rate, poly[3] + rate),
         # random.uniform(poly[4] - rate, poly[4] + rate),
         # random.uniform(poly[5] - rate, poly[5] + rate),
         # random.uniform(poly[6] - rate, poly[6] + rate))
+# ----------------------------------------------------
 
-        mutation_type = random.randint(0, 100)
-        if mutation_type > 2:
-            return Polinomial(random.uniform(poly[0] - rate, poly[0] + rate), random.uniform(poly[1] - rate, poly[1] + rate), random.uniform(poly[2] - rate, poly[2] + rate),
-                              random.uniform(poly[3] - rate, poly[3] + rate), random.uniform(poly[4] - rate, poly[4] + rate), random.uniform(poly[5] - rate, poly[5] + rate), random.uniform(poly[6] - rate, poly[6] + rate))
-        else:
-            return Polinomial(round(poly[0], 2), round(poly[1], 2), round(poly[2], 2), round(
-                poly[3], 2), round(poly[4], 2), round(poly[5], 2), round(poly[6], 2))
+        newPolyElems = [0, 0, 0, 0, 0, 0, 0]
+
+        for i in range(0, 7):
+            x = random.uniform(-abs(rate), abs(rate))
+            switcher = {
+                0: g1[i] - g2[i],
+                1: g1[i] + g2[i],
+                2: g1[i],
+                3: g2[i],
+                4: g1[i] + x,
+                5: g2[i] + x,
+                6: (g1[i] - g2[i]) / 2,
+                7: (g1[i] + g2[i]) / 2
+            }
+            res = random.randint(0, 7)  # from 0 to 7
+
+            newPolyElems[i] = switcher[res]
+        #     if random.randint(0, 1) == 1:
+        #         newPolyElems[x] = poly[x] + \
+        #             random.uniform(-abs(rate), abs(rate))
+        #     else:
+        #         newPolyElems[x] = poly[x]
+
+        return Polinomial(newPolyElems[0], newPolyElems[1], newPolyElems[2], newPolyElems[3], newPolyElems[4], newPolyElems[5], newPolyElems[6])
+# --------------------------------------------------------
+        # mutation_type = random.randint(0, 100)
+        # if mutation_type > 2:
+        #     return Polinomial(random.uniform(poly[0] - rate, poly[0] + rate), random.uniform(poly[1] - rate, poly[1] + rate), random.uniform(poly[2] - rate, poly[2] + rate),
+        #                       random.uniform(poly[3] - rate, poly[3] + rate), random.uniform(poly[4] - rate, poly[4] + rate), random.uniform(poly[5] - rate, poly[5] + rate), random.uniform(poly[6] - rate, poly[6] + rate))
+        # else:
+        #     return Polinomial(round(poly[0], 2), round(poly[1], 2), round(poly[2], 2), round(
+        #         poly[3], 2), round(poly[4], 2), round(poly[5], 2), round(poly[6], 2))
 
     def mix_genetic_material(self, *, g1, g2, i, mut):
-        switcher = {
-            0: g1[i] - g2[i],
-            1: g1[i] + g2[i],
-            2: g1[i],
-            3: g2[i],
-            4: g1[i] + 1,
-            5: g2[i] + 1,
-            6: (g1[i] - g2[i]) / 2,
-            7: (g1[i] + g2[i]) / 2
-        }
-        res = random.getrandbits(3)  # from 0 to 7
+        # switcher = {
+        #     0: g1[i] - g2[i],
+        #     1: g1[i] + g2[i],
+        #     2: g1[i],
+        #     3: g2[i],
+        #     4: g1[i] + 1,
+        #     5: g2[i] + 1,
+        #     6: (g1[i] - g2[i]) / 2,
+        #     7: (g1[i] + g2[i]) / 2
+        # }
+        # res = random.getrandbits(3)  # from 0 to 7
 
-        if abs(res) < 1e-4:
-            return 0
+        if random.randint(0, 1) == 1:
+            return g1[i]
         else:
-            return round(res, 6)
+            return g2[i]
+
+        # return round(res, 6)
 
     def calc_fitness(self, *, p, f_data):
         """
@@ -387,13 +415,7 @@ class PolyFinder(QObject):
                 g1=ind1, g2=ind2, i=6, mut=m),  # constant
         )
         if m:
-            mut_ind = random.randint(0, 2)
-            if mut_ind == 0:
-                return self.mutate(ind1)
-            if mut_ind == 1:
-                return self.mutate(ind2)
-            if mut_ind == 2:
-                return self.mutate(p)
+            return self.mutate(p, ind1, ind2)
         else:
             return p
 
@@ -403,7 +425,7 @@ class PolyFinder(QObject):
 
             select2 = select1
             while select2 == select1:
-                select2 = random.randint(0, (MAX_POPULATION_SIZE) - 1)
+                select2 = random.randint(0, (MAX_POPULATION_SIZE / 2) - 1)
 
             _, _, i1 = gen[select1]
             _, _, i2 = gen[select2]
@@ -418,13 +440,13 @@ def generate_generation(*, size):
     for i in range(size):
         gen = (*gen,
                Polinomial(
-                   random.uniform(700.0, 1000.0),  # x ^ 6
-                   random.uniform(700.0, 1000.0),  # x ^ 5
-                   random.uniform(700.0, 1000.0),  # x ^ 4
-                   random.uniform(700.0, 1000.0),  # x ^ 3
-                   random.uniform(700.0, 1000.0),  # x ^ 2
-                   random.uniform(700.0, 1000.0),  # x ^ 1
-                   random.uniform(700.0, 1000.0)  # constant
+                   random.uniform(-5.0, 5.0),  # x ^ 6
+                   random.uniform(-5.0, 5.0),  # x ^ 5
+                   random.uniform(-5.0, 5.0),  # x ^ 4
+                   random.uniform(-5.0, 5.0),  # x ^ 3
+                   random.uniform(-5.0, 5.0),  # x ^ 2
+                   random.uniform(-5.0, 5.0),  # x ^ 1
+                   random.uniform(-5.0, 5.0)  # constant
                )
                )
     return gen
