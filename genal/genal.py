@@ -309,7 +309,16 @@ class PolyFinder(QObject):
 
             if len(tmp_gen) == 0:
                 return
-
+            if self.g_no % 100 == 0:
+                print(f'Mutation Probability: {self.mutation_probability}')
+                print(f'Mutation Rate: {self.mutation_rate}')
+                print(f'tmp_gen[0]:{tmp_gen[0]}')
+                print(f'tmp_gen[1]:{tmp_gen[1]}')
+                print(f'tmp_gen[2]:{tmp_gen[2]}')
+                print(f'tmp_gen[3]:{tmp_gen[3]}')
+                print(f'tmp_gen[4]:{tmp_gen[4]}')
+                print(f'')
+            
             fittest = tmp_gen[0][0]
 
             if self.stuck_checker > 4:
@@ -329,8 +338,9 @@ class PolyFinder(QObject):
                 if self.g_no % 100 == 0:
                     self.mutation_rate += 0.01
                 factor = self.repeated_fitness // 10
-                self.mutation_probability += 5 * factor
-                self.mutation_rate += 0.1 * factor
+                if self.mutation_probability < MUTATION_CHANCE_SPACE / 2: 
+                    self.mutation_probability += 5  #* factor
+                self.mutation_rate += 0.1 #* factor
                 self.repeated_fitness += 1
 
             if fittest <= ERROR_THRESHOLD:
@@ -352,6 +362,7 @@ class PolyFinder(QObject):
                 self.finish()
                 self.finalize_execution(tmp_gen[0])
                 return
+        #end while
         if self.end:
             return
         self.finish()
