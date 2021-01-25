@@ -2,3 +2,4 @@ autopep8
 matplotlib
 numpy
 PyQt5
+pyqtgraph
