@@ -1,8 +1,6 @@
 from collections import namedtuple
 from PyQt5.QtCore import QObject, pyqtSignal
 
-import numpy.random as rand
-
 import random
 import time
 
@@ -314,7 +312,7 @@ class PolyFinder(QObject):
 
             fittest = tmp_gen[0][0]
 
-            if self.stuck_checker > 100:
+            if self.stuck_checker > 25:
                 self.stuck = True
 
             if (self.previous_fitness - fittest) * 100 <= 5:
@@ -400,10 +398,10 @@ class PolyFinder(QObject):
     def mix_genetic_material(self, *, g1, g2, i):
         switcher = {
             0: lambda: g1[i] - g2[i],
-            1: lambda:  g1[i] + g2[i],
-            2: lambda:  g1[i],
-            3: lambda:  g2[i],
-            4: lambda:  g1[i] - (g1[i] + g2[i]) / 2,
+            1: lambda: g1[i] + g2[i],
+            2: lambda: g1[i],
+            3: lambda: g2[i],
+            4: lambda: g1[i] - (g1[i] + g2[i]) / 2,
             5: lambda: g1[i] + (g1[i] + g2[i]) / 2,
             6: lambda: (g1[i] - g2[i]) / 2,
             7: lambda: (g1[i] + g2[i]) / 2,
@@ -456,20 +454,10 @@ class PolyFinder(QObject):
 
     def make_new_polinomials(self, gen, f_data):
         if self.stuck:
-            print("I'm stuck")
-            # for p in gen:
-            #     self.gen.put(p)
-            # gen0 = generate_generation(size=MAX_POPULATION_SIZE)
-            # for i in gen0:
-            #     self.gen.put((self.judge(p=i, f_data=self.f_data), 0, i))
-            # while not self.gen.empty():
-            #     gen = (*gen, self.gen.get())
-            #     self.gen.task_done()
             for i in range(len(gen)):
                 for j in range(50):
                     _, _, s = gen[i]
                     r = (j + 1) * 0.01
-                    # r = self.mutation_rate
                     p = Polinomial(
                         random.uniform(s[0] - r, s[0] + r),
                         random.uniform(s[1] - r, s[1] + r),
@@ -486,9 +474,7 @@ class PolyFinder(QObject):
             self.stuck_checker = 0
         else:
             for p in gen:
-                    self.gen.put(p)
-            # for p in tmp_gen:
-            #     self.gen.put(p)
+                self.gen.put(p)
             for _ in range(MAX_POPULATION_SIZE):
                 select1 = random.randint(0, int((MAX_POPULATION_SIZE / 2) - 1))
                 select2 = select1
