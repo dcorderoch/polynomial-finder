@@ -169,6 +169,7 @@ class PolyFinderGUI(QMainWindow):
         self.reset()
         self.rstBtn.setDisabled(True)
         self.label.setText("idle")
+        self.legend.setText("N/A")
 
     def graph(self, x, coeffs):
         y = 0
