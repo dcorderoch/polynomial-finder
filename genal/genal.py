@@ -19,17 +19,6 @@ ERROR_THRESHOLD = 0.05
 MAX_CYCLES = 1e5
 MUTATION_RATE = 1
 
-# 2x^6 + 2x^5 + 2x^4 + 2x^3 + 2x^2 + 2x + 7
-f0_data = (
-    (0.7, 11.117638000000000),
-    (0.8, 12.902848000000000),
-    (0.9, 15.434062000000000),
-    (1.0, 19.000000000000000),
-    (1.1, 23.974342000000004),
-    (1.2, 30.831807999999999),
-    (1.3, 40.165678000000000)
-)
-
 f1_data = (
     (-1.500000000000000, 1.037500000000000),
     (-1.438775510204080, 1.614668405292740),
@@ -230,7 +219,6 @@ class PolyFinder(QObject):
 
     def set_data(self, index):
         switcher = {
-            0: f0_data,
             1: f1_data,
             2: f2_data,
             3: f3_data
@@ -356,44 +344,18 @@ class PolyFinder(QObject):
                 poly[3], 2), round(poly[4], 2), round(poly[5], 2), round(poly[6], 2))
 
     def mix_genetic_material(self, *, g1, g2, i, mut):
-        # switcher = {
-        #     0: g1[i] - g2[i],
-        #     1: g1[i] + g2[i],
-        #     2: g1[i],
-        #     3: g2[i],
-        #     4: g1[i]+1,
-        #     5: g2[i]-1,
-        #     6: (g1[i] + g2[i]) / 2,
-        #     7: (g1[i] - g2[i]) / 2
-        # }
-        switch = random.getrandbits(3)  # from 0 to 7
-        # switch = 2 + random.getrandbits(1)
+        switcher = {
+            0: g1[i] - g2[i],
+            1: g1[i] + g2[i],
+            2: g1[i],
+            3: g2[i],
+            4: g1[i] + 1,
+            5: g2[i] + 1,
+            6: (g1[i] - g2[i]) / 2,
+            7: (g1[i] + g2[i]) / 2
+        }
+        res = random.getrandbits(3)  # from 0 to 7
 
-        if switch == 0:
-            res = g1[i] - g2[i]
-
-        elif switch == 1:
-            res = g1[i] + g2[i]
-
-        elif switch == 2:
-            res = g1[i]
-
-        elif switch == 3:
-            res = g2[i]
-
-        elif switch == 4:
-            res = g1[i] + 1
-
-        elif switch == 5:
-            res = g2[i] + 1
-
-        elif switch == 6:
-            res = (g1[i] - g2[i]) / 2
-
-        elif switch == 7:
-            res = (g1[i] + g2[i]) / 2
-
-        # res = switcher.get(switch)
         if abs(res) < 1e-4:
             return 0
         else:

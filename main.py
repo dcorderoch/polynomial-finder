@@ -106,7 +106,6 @@ class PolyFinderGUI(QMainWindow):
 
     def finish(self, p):
         text = f'p(x) = {p.x6}x^6 +{p.x5}x^5 + {p.x4}x^4 + {p.x3}x^3 + {p.x2}x^2 + {p.x1}x + {p.x0}'
-        print(f'FINISH: {text}')
         self.legend.setText(text)
 
     def setup_ui(self):
@@ -162,12 +161,6 @@ class PolyFinderGUI(QMainWindow):
         self.resetting.emit()
         self.label.setText("idle")
         self.legend.setText("N/A")
-
-    def graph(self, x, coeffs):
-        y = 0
-        for i, c in enumerate(coeffs):
-            y += c * x ** i
-        return y
 
     def update_graph(self, Polinomials, f_data, generation):
         f_x = (*(x[0] for x in f_data),)
