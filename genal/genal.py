@@ -13,7 +13,7 @@ Polinomial = namedtuple(
     'Polinomial', [
         'x6', 'x5', 'x4', 'x3', 'x2', 'x1', 'x0'])
 
-MAX_POPULATION_SIZE = 50
+MAX_POPULATION_SIZE = 80
 INITIAL_POPULATION_SIZE = 10
 MUTATION_THRESHOLD = 1
 MUTATION_CHANCE_SPACE = 100
@@ -314,8 +314,17 @@ class PolyFinder(QObject):
 
             fittest = tmp_gen[0][0]
 
-            if self.stuck_checker > 100:
-                self.stuck = True
+            if self.stuck_checker % 10 == 0:
+                same=True
+                for i in range(5):
+                    if tmp_gen[i][0] != fittest:
+                        same=False
+                        break
+                if same or self.stuck_checker == 100: 
+                    if self.stuck_checker == 100 :
+                        self.gen.put(tmp_gen[1])
+                        # self.gen.put(tmp_gen[2])
+                    self.stuck = True
 
             if (self.previous_fitness - fittest) * 100 <= 5:
                 self.stuck_checker += 1
@@ -466,7 +475,7 @@ class PolyFinder(QObject):
             #     gen = (*gen, self.gen.get())
             #     self.gen.task_done()
             for i in range(len(gen)):
-                for j in range(50):
+                for j in range(100):
                     _, _, s = gen[i]
                     r = (j + 1) * 0.01
                     # r = self.mutation_rate
