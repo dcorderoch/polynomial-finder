@@ -256,17 +256,10 @@ class PolyFinder(QObject):
         for i, y in enumerate(f_y):
             error = abs(100 * abs(y - f_f[i]) / y)
             cummulative_error += error
-            print(f'p{i:02d}: {f_f[i]:08f} vs {f_y[i]:08f}')
+            print(f'p{i:02d}: {f_f[i]:08f} vs {f_y[i]:08f}', end='')
             print(f' | error: {error:04f}%')
         print(f'avg error: {cummulative_error / len(f_y)}%')
         print(f'p(x): ', end='')
-        print(f'{p[2].x6}x^6 +', end='')
-        print(f'{p[2].x5}x^5 + ', end='')
-        print(f'{p[2].x4}x^4 + ', end='')
-        print(f'{p[2].x3}x^3 + ', end='')
-        print(f'{p[2].x2}x^2 + ', end='')
-        print(f'{p[2].x1}x + ', end='')
-        print(f'{p[2].x0}\nOR')
         print(f'{p[2].x6:04f}x^6 +', end='')
         print(f'{p[2].x5:04f}x^5 + ', end='')
         print(f'{p[2].x4:04f}x^4 + ', end='')
@@ -429,22 +422,13 @@ class PolyFinder(QObject):
             self.mix_genetic_material(g1=ind1, g2=ind2, i=5),  # x ^ 1
             self.mix_genetic_material(g1=ind1, g2=ind2, i=6),  # x ^ 0
         )
-        mutant = self.mutate(p)
-        self.gen.put(
-            (self.judge(
-                p=mutant,
-                f_data=self.f_data),
-                0,
-                mutant))
-        p1 = self.mutate(ind1)
-        self.gen.put((self.judge(p=p1, f_data=self.f_data), 0, p1))
-        p2 = self.mutate(ind1)
-        self.gen.put((self.judge(p=p2, f_data=self.f_data), 0, p2))
 
-        p1 = self.mutate(ind2)
-        self.gen.put((self.judge(p=p1, f_data=self.f_data), 0, p1))
-        p2 = self.mutate(ind2)
-        self.gen.put((self.judge(p=p2, f_data=self.f_data), 0, p2))
+        self.gen.put((self.judge(p=p, f_data=self.f_data), 0, p))
+
+        m = random.randint(0, 100)
+        if m < self.mutation_probability:
+            mutant = self.mutate(p)
+            self.gen.put((self.judge(p=mutant, f_data=self.f_data), 0, mutant))
 
     def make_new_polinomials(self, gen, f_data):
         if self.stuck:
