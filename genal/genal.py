@@ -193,7 +193,7 @@ def polimerize(x, coeffs):
 class PolyFinder(QObject):
     generated = pyqtSignal(tuple, tuple, int)
     initialized = pyqtSignal()
-    finished = pyqtSignal()
+    finished = pyqtSignal(tuple)
 
     def __init__(self):
         super().__init__()
@@ -275,7 +275,7 @@ class PolyFinder(QObject):
         print(f'{p[2].x1:04f}x + ', end='')
         print(f'{p[2].x0:04f}')
         print(f'END\n')
-        self.finished.emit()
+        self.finished.emit(p[2])
 
     def get_the_a_team(self, gen):
         tg = ()
