@@ -13,7 +13,7 @@ Polinomial = namedtuple(
     'Polinomial', [
         'x6', 'x5', 'x4', 'x3', 'x2', 'x1', 'x0'])
 
-MAX_POPULATION_SIZE = 20
+MAX_POPULATION_SIZE = 50
 INITIAL_POPULATION_SIZE = 10
 MUTATION_THRESHOLD = 1
 MUTATION_CHANCE_SPACE = 100
@@ -314,7 +314,7 @@ class PolyFinder(QObject):
 
             fittest = tmp_gen[0][0]
 
-            if self.stuck_checker > 4:
+            if self.stuck_checker > 100:
                 self.stuck = True
 
             if (self.previous_fitness - fittest) * 100 <= 5:
@@ -344,8 +344,8 @@ class PolyFinder(QObject):
                 return
 
             self.make_new_polinomials(tmp_gen, self.f_data)
-            for p in tmp_gen:
-                self.gen.put(p)
+            # for p in tmp_gen:
+            #     self.gen.put(p)
             time_so_far = time.monotonic() - self.start_time
             if time_so_far >= 300:
                 self.finish()
@@ -456,6 +456,7 @@ class PolyFinder(QObject):
 
     def make_new_polinomials(self, gen, f_data):
         if self.stuck:
+            print("I'm stuck")
             # for p in gen:
             #     self.gen.put(p)
             # gen0 = generate_generation(size=MAX_POPULATION_SIZE)
@@ -464,11 +465,11 @@ class PolyFinder(QObject):
             # while not self.gen.empty():
             #     gen = (*gen, self.gen.get())
             #     self.gen.task_done()
-            for i in range(MAX_POPULATION_SIZE):
+            for i in range(len(gen)):
                 for j in range(50):
-                    _, _, s = gen[i % 2]
-                    # r = (j + 1) * 0.01
-                    r = self.mutation_rate
+                    _, _, s = gen[i]
+                    r = (j + 1) * 0.01
+                    # r = self.mutation_rate
                     p = Polinomial(
                         random.uniform(s[0] - r, s[0] + r),
                         random.uniform(s[1] - r, s[1] + r),
@@ -480,16 +481,19 @@ class PolyFinder(QObject):
                     )
                     self.gen.put((self.judge(p=p, f_data=f_data), 0, p))
                 self.stuck_checker += 1
+            self.gen.put(gen[0])
             self.stuck = False
             self.stuck_checker = 0
         else:
-            # for p in gen:
-            #         self.gen.put(p)
+            for p in gen:
+                    self.gen.put(p)
+            # for p in tmp_gen:
+            #     self.gen.put(p)
             for _ in range(MAX_POPULATION_SIZE):
                 select1 = random.randint(0, int((MAX_POPULATION_SIZE / 2) - 1))
                 select2 = select1
                 while select2 == select1:
-                    select2 = random.randint(0, MAX_POPULATION_SIZE/2 - 1)
+                    select2 = random.randint(0, MAX_POPULATION_SIZE / 2 - 1)
                 _, _, i1 = gen[select1]
                 _, _, i2 = gen[select2]
                 self.mix(ind1=i1, ind2=i2)
