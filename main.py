@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
     QGraphicsPixmapItem,
     QGridLayout,
+    QLabel,
     QMainWindow,
     QPushButton,
     QWidget
@@ -39,6 +40,9 @@ class PolyFinderGUI(QMainWindow):
         self.f1Btn = QPushButton()
         self.f2Btn = QPushButton()
         self.f3Btn = QPushButton()
+
+        self.label = QLabel()
+        self.legend = QLabel()
 
         self.setup_ui()
 
@@ -79,18 +83,25 @@ class PolyFinderGUI(QMainWindow):
         layout.addWidget(self.f1Btn, 0, 4)
         layout.addWidget(self.f2Btn, 0, 5)
         layout.addWidget(self.f3Btn, 0, 6)
+        layout.addWidget(self.label, 0, 7)
+        layout.addWidget(self.legend, 3, 0, 1, 8)
 
         # (widget, fromRow, fromCol, rowSpan, colSpan)
-        layout.addWidget(self.plot_widget, 1, 0, 2, 7)
+        layout.addWidget(self.plot_widget, 1, 0, 2, 8)
 
         self.setCentralWidget(self.widget)
 
         self.show()
 
+    def finish(self, p):
+        text = f'p(x) = {p.x6:04f}x^6 +{p.x5:04f}x^5 + {p.x4:04f}x^4 + {p.x3:04f}x^3 + {p.x2:04f}x^2 + {p.x1:04f}x + {p.x0:04f}'
+        self.legend.setText(text)
+
     def make_signal_connections(self):
         self.worker.generated.connect(self.update_graph)
         self.worker.initialized.connect(self.worker.start_crunching)
         self.worker.finished.connect(lambda: self.on_stop_btn())
+        self.worker.finished.connect(lambda p: self.finish(p))
         self.startBtn.clicked.connect(self.worker.initialize)
         self.startBtn.clicked.connect(self.enable_stop)
         self.stopBtn.clicked.connect(self.worker.finish)
@@ -105,19 +116,24 @@ class PolyFinderGUI(QMainWindow):
 
     def setup_ui(self):
         self.startBtn.setText("start")
-        self.startBtn.setMinimumWidth(100)
         self.stopBtn.setText("stop")
-        self.stopBtn.setMinimumWidth(100)
         self.quitBtn.setText("quit")
-        self.quitBtn.setMinimumWidth(100)
         self.rstBtn.setText("reset")
-        self.rstBtn.setMinimumWidth(100)
         self.f1Btn.setText("f1")
-        self.f1Btn.setMinimumWidth(100)
         self.f2Btn.setText("f2")
-        self.f2Btn.setMinimumWidth(100)
         self.f3Btn.setText("f3")
+        self.label.setText("idle")
+        self.legend.setText("N/A")
+
+        self.startBtn.setMinimumWidth(100)
+        self.stopBtn.setMinimumWidth(100)
+        self.quitBtn.setMinimumWidth(100)
+        self.rstBtn.setMinimumWidth(100)
+        self.f1Btn.setMinimumWidth(100)
+        self.f2Btn.setMinimumWidth(100)
         self.f3Btn.setMinimumWidth(100)
+        self.label.setMinimumWidth(100)
+        self.legend.setMinimumWidth(100)
 
         self.startBtn.setDisabled(True)
         self.stopBtn.setDisabled(True)
@@ -134,6 +150,7 @@ class PolyFinderGUI(QMainWindow):
     def enable_stop(self):
         self.startBtn.setDisabled(True)
         self.stopBtn.setDisabled(False)
+        self.label.setText("working...")
 
     def reset(self):
         self.f1Btn.setDisabled(False)
@@ -146,10 +163,12 @@ class PolyFinderGUI(QMainWindow):
         self.stopBtn.setDisabled(True)
         self.rstBtn.setDisabled(False)
         self.quitBtn.setDisabled(False)
+        self.label.setText("stopped")
 
     def on_rst_btn(self):
         self.reset()
         self.rstBtn.setDisabled(True)
+        self.label.setText("idle")
 
     def graph(self, x, coeffs):
         y = 0
@@ -170,19 +189,19 @@ class PolyFinderGUI(QMainWindow):
                   (0, 204, 0), (204, 136, 0), (255, 0, 0))
 
         f_f1 = (*(genal.polimerize(x, Polinomials[0]) for x in f_x),)
-        self.curve1.setPen(color=colors[0], width=4, name='rank 1')
+        self.curve1.setPen(color=colors[0], width=5, name='rank 1')
         self.curve1.setData([*f_x, ], [*f_f1, ])
         f_f2 = (*(genal.polimerize(x, Polinomials[1]) for x in f_x),)
-        self.curve2.setPen(color=colors[1], width=2, name='rank 2')
+        self.curve2.setPen(color=colors[1], width=4, name='rank 2')
         self.curve2.setData([*f_x, ], [*f_f2, ])
         f_f3 = (*(genal.polimerize(x, Polinomials[2]) for x in f_x),)
-        self.curve3.setPen(color=colors[2], width=2, name='rank 3')
+        self.curve3.setPen(color=colors[2], width=3, name='rank 3')
         self.curve3.setData([*f_x, ], [*f_f3, ])
         f_f4 = (*(genal.polimerize(x, Polinomials[3]) for x in f_x),)
         self.curve4.setPen(color=colors[3], width=2, name='rank 4')
         self.curve4.setData([*f_x, ], [*f_f4, ])
         f_f5 = (*(genal.polimerize(x, Polinomials[4]) for x in f_x),)
-        self.curve5.setPen(color=colors[4], width=2, name='rank 5')
+        self.curve5.setPen(color=colors[4], width=1, name='rank 5')
         self.curve5.setData([*f_x, ], [*f_f5, ])
 
         self.updated.emit()
