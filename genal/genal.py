@@ -300,7 +300,9 @@ class PolyFinder(QObject):
             should_update_ui = self.g_no % 50 == 0
             century = self.g_no % 100 == 0
 
-            if should_update_ui:
+            fittest = tmp_gen[0][0]
+
+            if fittest < 10 and should_update_ui:
                 self.show_the_a_team(gen=tmp_gen)
 
             self.g_no += 1
@@ -311,8 +313,6 @@ class PolyFinder(QObject):
                 tg = self.get_the_a_team(tmp_gen)
                 self.generated.emit(tg, self.f_data, self.g_no)
                 return
-
-            fittest = tmp_gen[0][0]
 
             self.stuck = self.stuck_checker > 25
 
