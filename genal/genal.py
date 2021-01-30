@@ -18,6 +18,7 @@ MUTATION_CHANCE_SPACE = 100
 ERROR_THRESHOLD = 0.05
 MUTATION_RATE = 0.1
 
+# 0x ^ 6 + 0x ^ 5 - 1.4x ^ 4 + 0x ^ 3 + 2.5x ^ 2 - 1.0x ^ 1 + 1.0x ^ 0
 f1_data = (
     (-1.500000000000000, 1.037500000000000),
     (-1.438775510204080, 1.614668405292740),
@@ -71,6 +72,7 @@ f1_data = (
     (1.500000000000000, -1.962500000000010)
 )
 
+# 0x ^ 6 + 0x ^ 5 + 0x ^ 4 + 0.5x ^ 3 - 4.0x ^ 2 - 8.0x ^ 1 + 20.0x ^ 0
 f2_data = (
     (-3.000000000000000, -5.500000000000000),
     (-2.775510204081630, 0.699742454249506),
@@ -124,6 +126,7 @@ f2_data = (
     (7.999999999999990, -43.999999999999900)
 )
 
+# 0x ^ 6 - 0.4x ^ 5 + 0x ^ 4 - 2.6x ^ 3 + 0x ^ 2 + 0x ^ 1 + 3.0x ^ 0
 f3_data = (
     (-2.500000000000000, 1.437500000000000),
     (-2.387755102040820, -1.348831182019770),
@@ -251,10 +254,11 @@ class PolyFinder(QObject):
         f_f = (*(polimerize(x, p[2]) for x in f_x),)
         cummulative_error = 0
         for i, y in enumerate(f_y):
-            error = abs(100 * (y - f_f[i]) / y)
+            error = abs((y - f_f[i]) / y)
             cummulative_error += error
             print(f'p{i:02d}: {f_f[i]:08f} vs {f_y[i]:08f}', end='')
             print(f' | error: {error:04f}%')
+        cummulative_error *= 100
         print(f'avg error: {cummulative_error / len(f_y):08f}%')
         print(f'p(x): ', end='')
         print(f'{p[2].x6:04f}x^6 +', end='')
@@ -409,8 +413,8 @@ class PolyFinder(QObject):
         for point in f_data:
             f_f = polimerize(point[0], p)
             y = point[1]
-            fitness += abs(100 * (y - f_f) / y)
-        return fitness / len(f_data)
+            fitness += abs((y - f_f) / y)
+        return 100 * fitness / len(f_data)
 
     def mix(self, *, ind1, ind2):
         p = Polinomial(
